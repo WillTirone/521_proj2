@@ -2,17 +2,15 @@
 library(tidyverse)
 ```
 
-# 1) 
+# 1)
 
-## a) on overleaf 
+## a) on overleaf
 
 half page summary of paper
 
-## b) 
+## b)
 
-Summarize the data, i.e., % of pixels for the different classes. Plot well-labeled
-beautiful maps using x, y coordinates the expert labels with color of the region based
-on the expert labels. Do you observe some trend/pattern? Is an i.i.d. assumption for the samples justified for this dataset?
+Summarize the data, i.e., % of pixels for the different classes. Plot well-labeled beautiful maps using x, y coordinates the expert labels with color of the region based on the expert labels. Do you observe some trend/pattern? Is an i.i.d. assumption for the samples justified for this dataset?
 
 ```{r cache=TRUE}
 # loading data 
@@ -54,6 +52,5 @@ ggplot(img3, aes(x=x, y=y)) +
 
 ```{r}
 hello_world = 2+2
-
+print(hello_world)
 ```
-
