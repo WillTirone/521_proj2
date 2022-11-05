@@ -53,7 +53,7 @@ ggplot(img3, aes(x=x, y=y)) +
 ```
 
 ```{r}
-hello_world = 2+2
+hello_world = 2+8
 
 ```
 
