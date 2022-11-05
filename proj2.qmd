@@ -1,3 +1,7 @@
+```{r}
+library(tidyverse)
+```
+
 # 1) 
 
 ## a) on overleaf 
@@ -10,12 +14,40 @@ Summarize the data, i.e., % of pixels for the different classes. Plot well-label
 beautiful maps using x, y coordinates the expert labels with color of the region based
 on the expert labels. Do you observe some trend/pattern? Is an i.i.d. assumption for the samples justified for this dataset?
 
-```{r}
+```{r cache=TRUE}
 # loading data 
 img1 = data.frame(read.table("image_data/imagem1.txt"))
 img2 = data.frame(read.table("image_data/imagem2.txt"))
 img3 = data.frame(read.table("image_data/imagem3.txt"))
 
-# name the columns something sensible 
+# name the columns  
 col_names = c("y", "x", "label", "NDAI", "CD", "CORR", "DF","CF","BF","AF","AN")
+colnames(img1) = col_names
+colnames(img2) = col_names
+colnames(img3) = col_names
+
+img1$label = as.factor(img1$label)
+img2$label = as.factor(img2$label)
+img3$label = as.factor(img3$label)
+```
+
+```{r}
+# plotting 
+# first cloud image 
+ggplot(img1, aes(x=x, y=y)) + 
+  geom_point(aes(colour = label)) +
+  labs(title = "Image 1 With Expert Labels",
+          subtitle = "-1: No Cloud, 0 : Uncertain; 1 : Cloud")
+
+# second cloud image 
+ggplot(img2, aes(x=x, y=y)) + 
+geom_point(aes(colour = label)) +
+labs(title = "Image 1 With Expert Labels",
+        subtitle = "-1: No Cloud, 0 : Uncertain; 1 : Cloud")
+
+# third cloud image 
+ggplot(img3, aes(x=x, y=y)) + 
+  geom_point(aes(colour = label)) +
+  labs(title = "Image 1 With Expert Labels",
+          subtitle = "-1: No Cloud, 0 : Uncertain; 1 : Cloud")
 ```
