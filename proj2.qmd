@@ -1,7 +1,10 @@
 ```{r echo=FALSE}
+suppressPackageStartupMessages({
+library(factoextra)
 library(tidyverse)
-# install.packages("wesanderson")
-library(wesanderson)
+library(GGally)
+library(caret)
+})
 ```
 
 # 1)
@@ -10,7 +13,7 @@ library(wesanderson)
 
 half page summary of paper
 
-## b)
+## b) summary of data
 
 Summarize the data, i.e., % of pixels for the different classes. Plot well-labeled beautiful maps using x, y coordinates the expert labels with color of the region based on the expert labels. Do you observe some trend/pattern? Is an i.i.d. assumption for the samples justified for this dataset?
 
@@ -26,12 +29,7 @@ colnames(img1) = col_names
 colnames(img2) = col_names
 colnames(img3) = col_names
 
-# change to factors to color when plotting 
-img1$label = as.factor(img1$label)
-img2$label = as.factor(img2$label)
-img3$label = as.factor(img3$label)
-
-# add source column 
+# add source column to split into other sets 
 img1$source = "img1"
 img2$source = "img2"
 img3$source = "img3"
@@ -40,35 +38,62 @@ img3$source = "img3"
 lab_combined = rbind(img1[,c("x", "y", "label","source")],
                      img2[,c("x", "y", "label","source")],
                      img3[,c("x", "y", "label","source")])
+
+# change to factors to color when plotting 
+lab_combined$label = as.factor(lab_combined$label)
+
 ```
 
 Geographic plot
 
-```{r}
-# plotting 
-# first cloud image 
-ggplot(img1, aes(x=x, y=y)) + 
-  geom_point(aes(colour = label)) +
-  labs(title = "Image 1 With Expert Labels",
-          subtitle = "-1: No Cloud, 0 : Uncertain; 1 : Cloud")
-
-# second cloud image 
-ggplot(img2, aes(x=x, y=y)) + 
-geom_point(aes(colour = label)) +
-labs(title = "Image 1 With Expert Labels",
-        subtitle = "-1: No Cloud, 0 : Uncertain; 1 : Cloud")
-
-# third cloud image 
-ggplot(img3, aes(x=x, y=y)) + 
-  geom_point(aes(colour = label)) +
-  labs(title = "Image 1 With Expert Labels",
-          subtitle = "-1: No Cloud, 0 : Uncertain; 1 : Cloud")
+```{r cache=TRUE}
+ggplot(lab_combined, aes(x=x,y=y)) + 
+  geom_point(aes(colour = label)) + 
+  facet_grid(cols = vars(source)) + 
+  labs(title = "Images With Expert Labels",
+       subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  scale_colour_brewer("Expert \nLabel")
 ```
 
-Histograms of data
+TODO: turn this into a proportion
 
 ```{r}
-ggplot(lab_combined, aes(label), stat="count") + 
+ggplot(lab_combined, aes(label,fill=label)) + 
   geom_bar() + 
-  facet_grid(rows = "source") 
+  facet_grid(cols = vars(source)) + 
+  labs(title = "Images With Expert Labels",
+       subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  ylab("Count of Pixels")
+```
+
+## c) EDA
+
+```{r}
+img1.pca = prcomp(img1[,3:11], center=TRUE, scale = TRUE)
+fviz_pca_biplot(img1.pca, geom="point", habillage = img1$label)
+```
+
+```{r}
+# https://www.blopig.com/blog/2019/06/a-brief-introduction-to-ggpairs/
+ggpairs(sample_n(img1,10000), 
+        columns=4:7,
+        ggplot2::aes(color=as.factor(label),alpha=0.2),
+        progress = FALSE,
+        lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.3)))
+```
+
+# 2 
+
+## a) 
+
+(Data Split) Split the entire data (imagem1.txt, imagem2.txt, imagem3.txt) into three sets: training, validation and test. Think carefully about how to split the data. Suggest at least two non-trivial different ways of splitting the data which takes into account that the data is not i.i.d.
+
+```{r}
+# combine the data first 
+img_combined = rbind(img1,img2,img3)
+```
+
+```{r}
+# https://topepo.github.io/caret/data-splitting.html
+createTimeSlices(test_labs, initialWindow = 10, horizon = 5, fixedWindow = TRUE)
 ```
