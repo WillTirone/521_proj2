@@ -4,6 +4,7 @@ library(factoextra)
 library(tidyverse)
 library(GGally)
 library(caret)
+library(lctools)
 })
 ```
 
@@ -68,32 +69,85 @@ ggplot(lab_combined, aes(label,fill=label)) +
 
 ## c) EDA
 
-```{r}
-img1.pca = prcomp(img1[,3:11], center=TRUE, scale = TRUE)
-fviz_pca_biplot(img1.pca, geom="point", habillage = img1$label)
-```
+For some basic EDA, I took a random sample of the total data to allow for quicker plotting. This should retain the structure of the data, but may remove some outliers.
 
 ```{r}
+img_combined = rbind(img1,img2,img3)
+eda_sample = sample_n(img_combined,10000)
+```
+
+PCA
+
+```{r}
+rand.pca = prcomp(eda_sample[,3:11], center=TRUE, scale = TRUE)
+fviz_pca_biplot(rand.pca, geom="point", habillage = eda_sample$label)
+```
+
+Plotting some pairs
+
+```{r}
+
 # https://www.blopig.com/blog/2019/06/a-brief-introduction-to-ggpairs/
-ggpairs(sample_n(img1,10000), 
-        columns=4:7,
+ggpairs(eda_sample, 
+        columns=4:11, # all columns 
         ggplot2::aes(color=as.factor(label),alpha=0.2),
         progress = FALSE,
         lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.3)))
 ```
 
-# 2 
+# 2
 
-## a) 
+## a)
 
-(Data Split) Split the entire data (imagem1.txt, imagem2.txt, imagem3.txt) into three sets: training, validation and test. Think carefully about how to split the data. Suggest at least two non-trivial different ways of splitting the data which takes into account that the data is not i.i.d.
+The first, and most naive approach, would be to simply treat the three images as training, validation, and test data sets respectively. We know the data is not i.i.d, so it would be inappropriate to randomly sample points for our different sets.
+
+Second, since the data is correlated, we can hand-pick slices from each of the three images that result in the desired split, but in a way that retains the ordering. If we split each image into three chunks, we can then choose the first, middle, and last chunk for each of the desired sets and combine them. If, for some reason, there is some kind of feature or interesting detail present in the "position" of a slice of the data, hopefully this will allow us to capture it without overstating accuracy in training. To do this, we calculated the indices by hand.
+
+Naive Approach
 
 ```{r}
-# combine the data first 
-img_combined = rbind(img1,img2,img3)
+# naive way 
+naive_train = img1
+naive_test = img2
+naive_validate = img3
 ```
 
+Hand split
+
 ```{r}
-# https://topepo.github.io/caret/data-splitting.html
-createTimeSlices(test_labs, initialWindow = 10, horizon = 5, fixedWindow = TRUE)
+
+alt_train = data.frame(rbind(img1[23023:92089,],
+                             img2[46093:115229,],
+                             img3[1:69130,]))
+
+alt_test = data.frame(rbind(img1[1:23022,],
+                             img2[23047:46092,],
+                             img3[92175:115217,]))
+
+alt_validate = data.frame(rbind(img1[92090:115110,],
+                             img2[1:23046,],
+                             img3[69131:92174,]))
+```
+
+## b) 
+
+The trivial classifier would have high accuracy if the image was mostly cloud-free.
+
+```{r}
+trivial = rep(-1,length(alt_test$label))
+alt_triv_accuracy = sum(trivial == alt_test$label) / length(alt_test$label)
+alt_validate_accuracy = sum(trivial == alt_validate$label) / length(alt_test$label)
+
+alt_triv_accuracy
+alt_validate_accuracy
+```
+
+## c) 
+
+## d) 
+
+```{r}
+CVmaster = function(classifier, feat, labels, folds, loss) {
+  
+}
 ```
