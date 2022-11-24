@@ -4,6 +4,7 @@ library(tidyverse)
 library(GGally)
 library(caret)
 library(lctools)
+library(tidymodels)
 ```
 
 # 1)
@@ -93,7 +94,7 @@ eda_sample = sample_n(img_combined,10000)
 ```
 
 PCA
-
+why is label in here?
 ```{r}
 rand.pca = prcomp(eda_sample[,3:11], center=TRUE, scale = TRUE)
 fviz_pca_biplot(rand.pca, geom="point", habillage = eda_sample$label)
@@ -169,6 +170,12 @@ alt_validate_accuracy
 - just kidding these are fancy and reserved for pt 3 but maybe like pairwise scatterplots for correlation?
 - variable wise ... tree? like getting cut/off values of an X var to pred Y? i dont think that's too fancy
 
+-in model pred, keep pt order
+```{r}
+head(img_combined)
+```
+
+
 
 ## d) 
 kfold cv loss
@@ -179,10 +186,73 @@ CVmaster = function(classifier, feat, labels, folds, loss) {
 }
 ```
 
+
 # 4
 ## a
-Logistic Regression w CV:  (1, 0 -1 tri logreg)
 ```{r}
+#CHANGE THIS WITH REAL NOT EDA SAMPLE
+set.seed(1124)
+indicies = sample(10000, 200)
+train = eda_sample[-indicies,]
+test = eda_sample[indicies,]
 
+#cvs and recipie
+train_cvs <- vfold_cv(train, v = 5)
+train_recipie <- recipe(label ~ ., data = train)
+
+train_recipie2 <- recipe(label ~ . data = train) %>%
+  step_dummy(all_nominal()) %>%
+  step_normalize(all_numeric(), -label)
+```
+
+Logistic Regression w CV:  (1, 0 -1 tri logreg) (also, should include x, y)
+```{r}
+logreg_model = logistic_reg() %>%
+  set_mode("classification") %>%
+  set_engine("glm")
+```
+
+tree
+```{r}
+#tree model
+tree_mod <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode("classification")
+
+tree_wflow <- workflow() %>%
+  add_recipe(train_recipie) %>%
+  add_model(tree_mod)
+
+tree_fit <- tree_wflow %>%
+  fit_resamples(train_cvs, metrics = metric_set(accuracy, roc_auc, precision, recall))
+
+tree_fit %>% collect_metrics()
+```
+
+knn
+```{r}
+#knn
+knn_mod <- nearest_neighbor(neighbors = tune()) %>%
+  set_engine("kknn") %>%
+  set_mode("classification")
+
+k_grid <- grid_regular(neighbors(c(1,100)), 
+                       levels = 25)
+
+knn_wflow <- workflow() %>%
+  add_recipe(train_recipie2) %>%
+  add_model(knn_mod)
+
+knn_grid_search <- 
+  tune_grid(
+    knn_wflow,
+    resamples = train_cvs,
+    grid = k_grid
+)
+
+knn_grid_search %>% 
+  collect_metrics() %>%
+  filter(.metric == "accuracy") %>%
+  slice_max(mean)
 ```
 
