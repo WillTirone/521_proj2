@@ -54,7 +54,7 @@ ggplot(lab_combined, aes(x=x,y=y)) +
   scale_colour_brewer("Expert \nLabel")
 ```
 
-TODO: turn this into a proportion
+no iid - classifications tend to be based on whats around it
 
 ```{r}
 lab_combined2 = lab_combined %>%
@@ -87,6 +87,7 @@ ggplot(lab_combined, aes(label,fill=label)) +
 For some basic EDA, I took a random sample of the total data to allow for quicker plotting. This should retain the structure of the data, but may remove some outliers.
 
 ```{r}
+set.seed(1124)
 img_combined = rbind(img1,img2,img3)
 eda_sample = sample_n(img_combined,10000)
 ```
@@ -109,6 +110,7 @@ ggpairs(eda_sample,
         progress = FALSE,
         lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.3)))
 ```
+investigating other bits, maybe only look at cloud and no cloud,
 
 # 2
 
@@ -117,6 +119,10 @@ ggpairs(eda_sample,
 The first, and most naive approach, would be to simply treat the three images as training, validation, and test data sets respectively. We know the data is not i.i.d, so it would be inappropriate to randomly sample points for our different sets.
 
 Second, since the data is correlated, we can hand-pick slices from each of the three images that result in the desired split, but in a way that retains the ordering. If we split each image into three chunks, we can then choose the first, middle, and last chunk for each of the desired sets and combine them. If, for some reason, there is some kind of feature or interesting detail present in the "position" of a slice of the data, hopefully this will allow us to capture it without overstating accuracy in training. To do this, we calculated the indices by hand.
+
+third: create a grid, not across images but training/validation/test in each of the splits and do that three times for each image? (lecture 13 / oct18). ex/ with 9 blocks, use 7 for training, one for validation , one for prediction, usual CV error. since we want to preserve spacial dependency.
+
+
 
 Naive Approach
 
@@ -146,7 +152,7 @@ alt_validate = data.frame(rbind(img1[92090:115110,],
 
 ## b) 
 
-The trivial classifier would have high accuracy if the image was mostly cloud-free.
+The trivial classifier would have high accuracy if the image was mostly cloud-free. However, even so, this classifier is not catching clouds and is not being that meaningful, so it would be important to look at other metrics here.
 
 ```{r}
 trivial = rep(-1,length(alt_test$label))
@@ -158,8 +164,11 @@ alt_validate_accuracy
 ```
 
 ## c) 
+- like lec16 on oct27 for classification error metrics?
+- and then like... a tree? or logistic regression w three variables? to see most important classifiers?
 
 ## d) 
+kfold cv loss
 
 ```{r}
 CVmaster = function(classifier, feat, labels, folds, loss) {
