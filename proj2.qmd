@@ -166,6 +166,9 @@ alt_validate_accuracy
 ## c) 
 - like lec16 on oct27 for classification error metrics?
 - and then like... a tree? or logistic regression w three variables? to see most important classifiers?
+- just kidding these are fancy and reserved for pt 3 but maybe like pairwise scatterplots for correlation?
+- variable wise ... tree? like getting cut/off values of an X var to pred Y? i dont think that's too fancy
+
 
 ## d) 
 kfold cv loss
@@ -175,3 +178,11 @@ CVmaster = function(classifier, feat, labels, folds, loss) {
   
 }
 ```
+
+# 4
+## a
+Logistic Regression w CV:  (1, 0 -1 tri logreg)
+```{r}
+
+```
+
