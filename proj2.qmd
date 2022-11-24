@@ -1,11 +1,9 @@
 ```{r echo=FALSE}
-suppressPackageStartupMessages({
 library(factoextra)
 library(tidyverse)
 library(GGally)
 library(caret)
 library(lctools)
-})
 ```
 
 # 1)
@@ -59,6 +57,23 @@ ggplot(lab_combined, aes(x=x,y=y)) +
 TODO: turn this into a proportion
 
 ```{r}
+lab_combined2 = lab_combined %>%
+  group_by(source, label) %>%
+  count(label) %>%
+  ungroup(label) %>%
+  mutate(prop = n / sum(n))
+```
+
+```{r}
+ggplot(lab_combined2, aes(label,fill=label)) + 
+  geom_col(aes(y = prop)) + 
+  facet_grid(cols = vars(source)) + 
+  labs(title = "Images With Expert Labels",
+       subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  ylab("Proportion of Pixels")
+```
+```{r}
+#for reference
 ggplot(lab_combined, aes(label,fill=label)) + 
   geom_bar() + 
   facet_grid(cols = vars(source)) + 
