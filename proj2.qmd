@@ -24,7 +24,7 @@ img2 = data.frame(read.table("image_data/imagem2.txt"))
 img3 = data.frame(read.table("image_data/imagem3.txt"))
 
 # name the columns  
-col_names = c("y", "x", "label", "NDAI", "CD", "CORR", "DF","CF","BF","AF","AN")
+col_names = c("y", "x", "label", "NDAI", "SD", "CORR", "DF","CF","BF","AF","AN")
 colnames(img1) = col_names
 colnames(img2) = col_names
 colnames(img3) = col_names
@@ -55,8 +55,6 @@ ggplot(lab_combined, aes(x=x,y=y)) +
   scale_colour_brewer("Expert \nLabel")
 ```
 
-no iid - classifications tend to be based on whats around it
-
 ```{r}
 lab_combined2 = lab_combined %>%
   group_by(source, label) %>%
@@ -67,11 +65,12 @@ lab_combined2 = lab_combined %>%
 
 ```{r}
 ggplot(lab_combined2, aes(label,fill=label)) + 
-  geom_col(aes(y = prop)) + 
+  geom_col(aes(y = prop), col = "darkgrey") + 
   facet_grid(cols = vars(source)) + 
   labs(title = "Images With Expert Labels",
        subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
-  ylab("Proportion of Pixels")
+  ylab("Proportion of Pixels") + 
+  scale_fill_brewer("Expert \nLabel")
 ```
 ```{r}
 #for reference
@@ -91,10 +90,11 @@ For some basic EDA, I took a random sample of the total data to allow for quicke
 set.seed(1124)
 img_combined = rbind(img1,img2,img3)
 eda_sample = sample_n(img_combined,10000)
+head(eda_sample)
 ```
 
 PCA
-why is label in here?
+should  label be in here?
 ```{r}
 rand.pca = prcomp(eda_sample[,3:11], center=TRUE, scale = TRUE)
 fviz_pca_biplot(rand.pca, geom="point", habillage = eda_sample$label)
@@ -112,6 +112,84 @@ ggpairs(eda_sample,
         lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.3)))
 ```
 investigating other bits, maybe only look at cloud and no cloud,
+```{r}
+eda_sample %>%
+  filter(label != 0) %>%
+  group_by(label) %>%
+  summarize(meanndai = mean(NDAI),
+            minndai = min(NDAI),
+            maxndai = max(NDAI))
+```
+```{r}
+#density plot of that
+eda_sample %>%
+  filter(label == 1) %>%
+  ggplot(aes(x = NDAI)) +
+  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) +
+  geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+```
+
+```{r}
+eda_sample %>%
+  filter(label != 0) %>%
+  group_by(label) %>%
+  summarize(meanSD = mean(SD),
+            minSD = min(SD),
+            maxSD = max(SD))
+```
+This looks interesting, lets plot
+```{r}
+eda_sample %>%
+  filter(label == 1) %>%
+  ggplot(aes(x = CD)) +
+  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
+  #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+```
+
+```{r}
+eda_sample %>%
+  filter(label != 0) %>%
+  group_by(label) %>%
+  summarize(meanCORR = mean(CORR),
+            minCORR = min(CORR),
+            maxCORR = max(CORR))
+```
+```{r}
+#density plot of that
+eda_sample %>%
+  filter(label == 1) %>%
+  ggplot(aes(x = CORR)) +
+  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
+  #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+```
+```{r}
+library(patchwork)
+p1 = eda_sample %>%
+  filter(label != 0) %>%
+  ggplot() +
+  geom_point(aes(x = NDAI, y = CORR, col = as.factor(label))) + 
+  theme(legend.position = "none")
+
+
+p2 = eda_sample %>%
+  filter(label != 0) %>%
+  ggplot() +
+  geom_point(aes(x = NDAI, y = SD, col = as.factor(label))) + 
+  theme(legend.position = "none")
+
+
+p3 = eda_sample %>%
+  filter(label != 0) %>%
+  ggplot() +
+  geom_point(aes(x = SD, y = CORR, col = as.factor(label)))+
+  theme(legend.position = "none")
+
+p1+p2/p3
+```
+
 
 # 2
 
@@ -229,30 +307,8 @@ tree_fit <- tree_wflow %>%
 tree_fit %>% collect_metrics()
 ```
 
-knn
+qda
 ```{r}
-#knn
-knn_mod <- nearest_neighbor(neighbors = tune()) %>%
-  set_engine("kknn") %>%
-  set_mode("classification")
 
-k_grid <- grid_regular(neighbors(c(1,100)), 
-                       levels = 25)
-
-knn_wflow <- workflow() %>%
-  add_recipe(train_recipie2) %>%
-  add_model(knn_mod)
-
-knn_grid_search <- 
-  tune_grid(
-    knn_wflow,
-    resamples = train_cvs,
-    grid = k_grid
-)
-
-knn_grid_search %>% 
-  collect_metrics() %>%
-  filter(.metric == "accuracy") %>%
-  slice_max(mean)
 ```
 
