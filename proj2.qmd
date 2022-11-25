@@ -190,6 +190,27 @@ p3 = eda_sample %>%
 p1/(p2+p3)
 ```
 
+#### analysis on the silly little angles
+```{r}
+head(eda_sample)
+```
+
+Notes on angular features: (re plot below) 
+DF: very much overlap, -1 has most density in a smaller range than with 1
+CF: upper values for -1, but vals still overlap
+BF: upper values for -1, but vals still overlap (maybe more extreme than with CF)
+AF: upper values for -1, but vals still overlap. -1 has a much much narrower range than 1
+AN: upper values for -1, but vals still overlap. -1 has a much much narrower range than 1
+```{r}
+eda_sample %>%
+  filter(label == 1) %>%
+  #replace x = with feature of choosing
+  ggplot(aes(x = AN, y = ..density..)) +
+  geom_histogram(fill = 2, alpha = 0.5) + 
+  geom_histogram(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
+  #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+```
+
 
 # 2
 
