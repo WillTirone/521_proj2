@@ -170,9 +170,7 @@ library(patchwork)
 p1 = eda_sample %>%
   filter(label != 0) %>%
   ggplot() +
-  geom_point(aes(x = NDAI, y = CORR, col = as.factor(label))) + 
-  theme(legend.position = "none")
-
+  geom_point(aes(x = NDAI, y = CORR, col = as.factor(label)))
 
 p2 = eda_sample %>%
   filter(label != 0) %>%
@@ -195,7 +193,8 @@ p1/(p2+p3)
 head(eda_sample)
 ```
 
-Notes on angular features: (re plot below) 
+Notes on angular features: (re plot below)
+green is non-cloud, pink is cloud]
 DF: very much overlap, -1 has most density in a smaller range than with 1
 CF: upper values for -1, but vals still overlap
 BF: upper values for -1, but vals still overlap (maybe more extreme than with CF)
@@ -205,7 +204,7 @@ AN: upper values for -1, but vals still overlap. -1 has a much much narrower ran
 eda_sample %>%
   filter(label == 1) %>%
   #replace x = with feature of choosing
-  ggplot(aes(x = AN, y = ..density..)) +
+  ggplot(aes(x = BF, y = ..density..)) +
   geom_histogram(fill = 2, alpha = 0.5) + 
   geom_histogram(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
   #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
