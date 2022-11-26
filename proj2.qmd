@@ -29,7 +29,7 @@ img2 = data.frame(read.table("image_data/imagem2.txt"))
 img3 = data.frame(read.table("image_data/imagem3.txt"))
 
 # name the columns  
-col_names = c("y", "x", "label", "NDAI", "SD", "CORR", "DF","CF","BF","AF","AN")
+col_names = c("y", "x", "label", "NDAI", "CD", "CORR", "DF","CF","BF","AF","AN")
 colnames(img1) = col_names
 colnames(img2) = col_names
 colnames(img3) = col_names
@@ -153,7 +153,7 @@ This looks interesting, lets plot
 ```{r}
 eda_sample %>%
   filter(label == 1) %>%
-  ggplot(aes(x = CF)) +
+  ggplot(aes(x = CD)) +
   geom_density(fill = 2, alpha = 0.5) + 
   geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
   #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
@@ -230,7 +230,7 @@ ggplot(eda_sample, aes(x=as.factor(label),y=BF, fill=label)) +
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # maybe? 
-ggplot(eda_sample, aes(x=as.factor(label),y=CF, fill=label)) + 
+ggplot(eda_sample, aes(x=as.factor(label),y=CD, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. BF", 
@@ -256,7 +256,7 @@ ggplot(eda_sample, aes(x=as.factor(label),y=CORR, fill=label)) +
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 ```
 
-# 2
+# 2)
 
 ## a)
 
@@ -309,21 +309,6 @@ alt_validate |> count(label)
 
 ## c)
 
-discuss with natalie
-
-## d)
-
-maybe make a table for overleaf for these
-
-| METHOD   | ASSUMPTIONS |
-|----------|-------------|
-| logistic |             |
-|          |             |
-|          |             |
-|          |             |
-
-## c)
-
 -   want our data to be separated
 -   like lec16 on oct27 for classification error metrics?
 -   pairwise scatterplots for correlation?
@@ -337,7 +322,28 @@ head(img_combined)
 
 ## d)
 
-kfold cv loss
+Toy example to illustrate log loss, will put this in CV function for logistic reg
+
+```{r}
+# loss function example 
+# https://developers.google.com/machine-learning/crash-course/logistic-regression/model-training
+log_loss = function(y,y.pred) { 
+  
+  # y is label in train data 
+  # y.pred = [0,1] probability 
+  
+  L = sum(-y * log(y.pred) - (1-y) * log(1-y.pred))
+  return(L)
+  }
+```
+
+```{r}
+n <- 10 # sample size
+y = sample(c(0,1), replace=TRUE, size=n)
+pred_y = runif(10,0,1)
+
+log_loss(y,pred_y)
+```
 
 ```{r}
 CVmaster = function(classifier, feat, labels, folds, loss) {
@@ -345,7 +351,7 @@ CVmaster = function(classifier, feat, labels, folds, loss) {
 }
 ```
 
-# 4
+# 4)
 
 note:
 
@@ -357,7 +363,7 @@ be careful with Hyperparameter choices
 
 • number of trees in random forests
 
-## a
+## a)
 
 ```{r}
 #CHANGE THIS WITH REAL NOT EDA SAMPLE (if we want to do tidymodels)
