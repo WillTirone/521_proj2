@@ -346,9 +346,48 @@ log_loss(y,pred_y)
 ```
 
 ```{r}
-CVmaster = function(classifier, feat, labels, folds, loss) {
+CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
   
+  # data frame to output 
+  output = data.frame(k = NA, loss = NA)
+  
+  # creating k folds 
+  val = createFolds(train_labels, k = folds)
+  
+  for (i in 1:folds){
+    
+    # predict on validation set 
+    predictions = predict(classifier,train_feat[val[[i]],],type='response')
+    
+    # calculate an arbitrary loss function 
+    # for example, log loss for logistic regression
+    L = loss(train_labels, predictions)
+    
+    # then rbind 
+    rbind(ouput, c(k,L))
+  }
+  
+  return(output)
 }
+```
+
+Trying to check CV function on mtcars
+
+Using WHOLE thing as validation set
+
+```{r}
+fit = glm(vs ~ mpg, data = mtcars, family = 'binomial')
+train_features = mtcars[,c("mpg")] # just used mpg as feature 
+train_lab = mtcars[,c('vs')] # 0 1 label 
+
+
+predict(fit, train_features)
+
+
+CVmaster(classifier = fit,
+         train_feat = train_features, 
+         train_labels = train_lab, 
+         loss = log_loss) # fn
 ```
 
 # 4)
