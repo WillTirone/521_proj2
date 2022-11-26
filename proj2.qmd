@@ -7,6 +7,8 @@ library(caret)
 library(lctools)
 library(sqldf)
 library(latex2exp)
+library(tidymodels)
+library(patchwork)
 })
 ```
 
@@ -27,7 +29,7 @@ img2 = data.frame(read.table("image_data/imagem2.txt"))
 img3 = data.frame(read.table("image_data/imagem3.txt"))
 
 # name the columns  
-col_names = c("y", "x", "label", "NDAI", "CD", "CORR", "DF","CF","BF","AF","AN")
+col_names = c("y", "x", "label", "NDAI", "SD", "CORR", "DF","CF","BF","AF","AN")
 colnames(img1) = col_names
 colnames(img2) = col_names
 colnames(img3) = col_names
@@ -58,9 +60,26 @@ ggplot(lab_combined, aes(x=x,y=y)) +
   scale_colour_brewer("Expert \nLabel")
 ```
 
-TODO: turn this into a proportion
+```{r}
+lab_combined2 = lab_combined %>%
+  group_by(source, label) %>%
+  count(label) %>%
+  ungroup(label) %>%
+  mutate(prop = n / sum(n))
+```
 
 ```{r}
+ggplot(lab_combined2, aes(label,fill=label)) + 
+  geom_col(aes(y = prop), col = "darkgrey") + 
+  facet_grid(cols = vars(source)) + 
+  labs(title = "Images With Expert Labels",
+       subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  ylab("Proportion of Pixels") + 
+  scale_fill_brewer("Expert \nLabel")
+```
+
+```{r}
+#for reference
 ggplot(lab_combined, aes(label,fill=label)) + 
   geom_bar() + 
   facet_grid(cols = vars(source)) + 
@@ -74,8 +93,10 @@ ggplot(lab_combined, aes(label,fill=label)) +
 For some basic EDA, I took a random sample of the total data to allow for quicker plotting. This should retain the structure of the data, but may remove some outliers.
 
 ```{r}
+set.seed(1124)
 img_combined = rbind(img1,img2,img3)
 eda_sample = sample_n(img_combined,10000)
+head(eda_sample)
 ```
 
 PCA
@@ -97,10 +118,109 @@ ggpairs(eda_sample,
         lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.3)))
 ```
 
-Boxplots, fix y labels when we decide
+investigating other bits, maybe only look at cloud and no cloud,
+
+```{r}
+eda_sample %>%
+  filter(label != 0) %>%
+  group_by(label) %>%
+  summarize(meanndai = mean(NDAI),
+            minndai = min(NDAI),
+            maxndai = max(NDAI))
+```
+
+```{r}
+#density plot of that
+eda_sample %>%
+  filter(label == 1) %>%
+  ggplot(aes(x = NDAI)) +
+  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) +
+  geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+```
+
+```{r}
+eda_sample %>%
+  filter(label != 0) %>%
+  group_by(label) %>%
+  summarize(meanSD = mean(SD),
+            minSD = min(SD),
+            maxSD = max(SD))
+```
+
+This looks interesting, lets plot
+
+```{r}
+eda_sample %>%
+  filter(label == 1) %>%
+  ggplot(aes(x = CF)) +
+  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
+  #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+```
+
+```{r}
+eda_sample %>%
+  filter(label != 0) %>%
+  group_by(label) %>%
+  summarize(meanCORR = mean(CORR),
+            minCORR = min(CORR),
+            maxCORR = max(CORR))
+```
+
+```{r}
+#density plot of that
+eda_sample %>%
+  filter(label == 1) %>%
+  ggplot(aes(x = CORR)) +
+  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
+  #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+```
 
 ```{r}
 
+p1 = eda_sample %>%
+  filter(label != 0) %>%
+  ggplot() +
+  geom_point(aes(x = NDAI, y = CORR, col = as.factor(label)))
+
+p2 = eda_sample %>%
+  filter(label != 0) %>%
+  ggplot() +
+  geom_point(aes(x = NDAI, y = SD, col = as.factor(label))) + 
+  theme(legend.position = "none")
+
+p3 = eda_sample %>%
+  filter(label != 0) %>%
+  ggplot() +
+  geom_point(aes(x = SD, y = CORR, col = as.factor(label)))+
+  theme(legend.position = "none")
+
+p1/(p2+p3)
+```
+
+#### analysis on the silly little angles
+
+```{r}
+head(eda_sample)
+```
+
+Notes on angular features: (re plot below) green is non-cloud, pink is cloud\] DF: very much overlap, -1 has most density in a smaller range than with 1 CF: upper values for -1, but vals still overlap BF: upper values for -1, but vals still overlap (maybe more extreme than with CF) AF: upper values for -1, but vals still overlap. -1 has a much much narrower range than 1 AN: upper values for -1, but vals still overlap. -1 has a much much narrower range than 1
+
+```{r}
+eda_sample %>%
+  filter(label == 1) %>%
+  #replace x = with feature of choosing
+  ggplot(aes(x = BF, y = ..density..)) +
+  geom_histogram(fill = 2, alpha = 0.5) + 
+  geom_histogram(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
+  #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+```
+
+Boxplots, fix y labels when we decide
+
+```{r}
 
 ggplot(eda_sample, aes(x=as.factor(label),y=BF, fill=label)) + 
   geom_boxplot(alpha=.7) + 
@@ -110,7 +230,7 @@ ggplot(eda_sample, aes(x=as.factor(label),y=BF, fill=label)) +
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # maybe? 
-ggplot(eda_sample, aes(x=as.factor(label),y=CD, fill=label)) + 
+ggplot(eda_sample, aes(x=as.factor(label),y=CF, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. BF", 
@@ -143,6 +263,12 @@ ggplot(eda_sample, aes(x=as.factor(label),y=CORR, fill=label)) +
 The first, and most naive approach, would be to simply treat the three images as training, validation, and test data sets respectively. We know the data is not i.i.d, so it would be inappropriate to randomly sample points for our different sets.
 
 Second, since the data is correlated, we can hand-pick slices from each of the three images that result in the desired split, but in a way that retains the ordering. If we split each image into three chunks, we can then choose the first, middle, and last chunk for each of the desired sets and combine them. If, for some reason, there is some kind of feature or interesting detail present in the "position" of a slice of the data, hopefully this will allow us to capture it without overstating accuracy in training. To do this, we calculated the indices by hand.
+
+third: create a grid, not across images but training/validation/test in each of the splits and do that three times for each image? (lecture 13 / oct18). ex/ with 9 blocks, use 7 for training, one for validation , one for prediction, usual CV error. since we want to preserve spacial dependency.
+
+blocked Cross validation, repeat process for the three images? what do we do w the 0 points? just remove?
+
+Naive Approach
 
 ```{r}
 # naive way 
@@ -196,8 +322,99 @@ maybe make a table for overleaf for these
 |          |             |
 |          |             |
 
+## c)
+
+-   want our data to be separated
+-   like lec16 on oct27 for classification error metrics?
+-   pairwise scatterplots for correlation?
+-   variable wise ... tree? like getting cut/off values of an X var to pred Y? i dont think that's too fancy
+
+-in model pred, keep pt order
+
+```{r}
+head(img_combined)
+```
+
+## d)
+
+kfold cv loss
+
 ```{r}
 CVmaster = function(classifier, feat, labels, folds, loss) {
   
 }
+```
+
+# 4
+
+note:
+
+be careful with Hyperparameter choices
+
+• dimension in PCA • K in K-means, or GMM
+
+• regularization parameter in regularlized methods
+
+• number of trees in random forests
+
+## a
+
+```{r}
+#CHANGE THIS WITH REAL NOT EDA SAMPLE (if we want to do tidymodels)
+set.seed(1124)
+indicies = sample(10000, 200)
+train = eda_sample[-indicies,]
+test = eda_sample[indicies,]
+
+#cvs and recipie
+train_cvs <- vfold_cv(train, v = 5)
+train_recipie <- recipe(label ~ ., data = train)
+
+train_recipie2 <- recipe(label ~ . data = train) %>%
+  step_dummy(all_nominal()) %>%
+  step_normalize(all_numeric(), -label)
+```
+
+Logistic Regression
+
+```{r}
+logreg_model = logistic_reg() %>%
+  set_mode("classification") %>%
+  set_engine("glm")
+```
+
+Logistic Regression w L1 penalty
+
+```{r}
+
+```
+
+QDA
+
+```{r}
+
+```
+
+tree
+
+```{r}
+#tree model
+tree_mod <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode("classification")
+
+tree_wflow <- workflow() %>%
+  add_recipe(train_recipie) %>%
+  add_model(tree_mod)
+
+tree_fit <- tree_wflow %>%
+  fit_resamples(train_cvs, metrics = metric_set(accuracy, roc_auc, precision, recall))
+
+tree_fit %>% collect_metrics()
+```
+
+qda
+
+```{r}
+
 ```
