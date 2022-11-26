@@ -5,6 +5,8 @@ library(tidyverse)
 library(GGally)
 library(caret)
 library(lctools)
+library(sqldf)
+library(latex2exp)
 })
 ```
 
@@ -78,7 +80,7 @@ eda_sample = sample_n(img_combined,10000)
 
 PCA
 
-```{r}
+```{r }
 rand.pca = prcomp(eda_sample[,3:11], center=TRUE, scale = TRUE)
 fviz_pca_biplot(rand.pca, geom="point", habillage = eda_sample$label)
 ```
@@ -95,6 +97,45 @@ ggpairs(eda_sample,
         lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.3)))
 ```
 
+Boxplots, fix y labels when we decide
+
+```{r}
+
+
+ggplot(eda_sample, aes(x=as.factor(label),y=BF, fill=label)) + 
+  geom_boxplot(alpha=.7) + 
+  theme(legend.position = "none") + 
+  labs(title = "Labels vs. BF", 
+       x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
+       y = TeX("$45^{\\circ}$ front angle, MISR"))
+
+# maybe? 
+ggplot(eda_sample, aes(x=as.factor(label),y=CD, fill=label)) + 
+  geom_boxplot(alpha=.7) + 
+  theme(legend.position = "none") + 
+  labs(title = "Labels vs. BF", 
+       x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
+       y = TeX("$45^{\\circ}$ front angle, MISR"))
+
+# NDAI
+# good predictor for -1 
+ggplot(eda_sample, aes(x=as.factor(label),y=NDAI, fill=label)) + 
+  geom_boxplot(alpha=.7) + 
+  theme(legend.position = "none") + 
+  labs(title = "Labels vs. BF", 
+       x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
+       y = TeX("$45^{\\circ}$ front angle, MISR"))
+
+# CORR 
+# good predictor for 1 
+ggplot(eda_sample, aes(x=as.factor(label),y=CORR, fill=label)) + 
+  geom_boxplot(alpha=.7) + 
+  theme(legend.position = "none") + 
+  labs(title = "Labels vs. BF", 
+       x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
+       y = TeX("$45^{\\circ}$ front angle, MISR"))
+```
+
 # 2
 
 ## a)
@@ -103,19 +144,13 @@ The first, and most naive approach, would be to simply treat the three images as
 
 Second, since the data is correlated, we can hand-pick slices from each of the three images that result in the desired split, but in a way that retains the ordering. If we split each image into three chunks, we can then choose the first, middle, and last chunk for each of the desired sets and combine them. If, for some reason, there is some kind of feature or interesting detail present in the "position" of a slice of the data, hopefully this will allow us to capture it without overstating accuracy in training. To do this, we calculated the indices by hand.
 
-Naive Approach
-
 ```{r}
 # naive way 
 naive_train = img1
 naive_test = img2
 naive_validate = img3
-```
 
-Hand split
-
-```{r}
-
+# hand splitting 
 alt_train = data.frame(rbind(img1[23023:92089,],
                              img2[46093:115229,],
                              img3[1:69130,]))
@@ -129,9 +164,9 @@ alt_validate = data.frame(rbind(img1[92090:115110,],
                              img3[69131:92174,]))
 ```
 
-## b) 
+## b)
 
-The trivial classifier would have high accuracy if the image was mostly cloud-free.
+The trivial classifier would have high accuracy if the image was mostly cloud-free. Since we're a little below 50%, the trivial classifier does not work well. Though, if we switched to classifying everything as a cloud we would have greater than 50% accuracy. However, we have a fairly high degree of uncertainty in our test and validation data. In the test data, about 27% of the points are labeled 0 for uncertain, and in the validation data, 70% are uncertain. So while the trivial classifier does poorly, we have to consider the uncertainty associated with it.
 
 ```{r}
 trivial = rep(-1,length(alt_test$label))
@@ -140,11 +175,26 @@ alt_validate_accuracy = sum(trivial == alt_validate$label) / length(alt_test$lab
 
 alt_triv_accuracy
 alt_validate_accuracy
+
+# counts 
+alt_test |> count(label)
+alt_validate |> count(label)
 ```
 
-## c) 
+## c)
 
-## d) 
+discuss with natalie
+
+## d)
+
+maybe make a table for overleaf for these
+
+| METHOD   | ASSUMPTIONS |
+|----------|-------------|
+| logistic |             |
+|          |             |
+|          |             |
+|          |             |
 
 ```{r}
 CVmaster = function(classifier, feat, labels, folds, loss) {
