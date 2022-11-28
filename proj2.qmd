@@ -49,26 +49,22 @@ lab_combined$label = as.factor(lab_combined$label)
 img_combined = rbind(img1,img2,img3)
 ```
 
-Geographic plot
+Geographic plot and bar plot of labels
 
-```{r cache=TRUE}
+```{r}
 ggplot(lab_combined, aes(x=x,y=y)) + 
   geom_point(aes(colour = label)) + 
   facet_grid(cols = vars(source)) + 
   labs(title = "Images With Expert Labels",
        subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
   scale_colour_brewer("Expert \nLabel")
-```
 
-```{r}
 lab_combined2 = lab_combined %>%
   group_by(source, label) %>%
   count(label) %>%
   ungroup(label) %>%
   mutate(prop = n / sum(n))
-```
 
-```{r}
 ggplot(lab_combined2, aes(label,fill=label)) + 
   geom_col(aes(y = prop), col = "darkgrey") + 
   facet_grid(cols = vars(source)) + 
@@ -106,69 +102,67 @@ ggpairs(eda_sample,
         lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.3)))
 ```
 
-investigating other bits, maybe only look at cloud and no cloud,
+Investigating the features. Below we removed the 0 labels, though they can be added back in if necessary.
 
 ```{r}
+# =============================================================================
+# Summarizing features here 
+# =============================================================================
+
+# summarizing NDAI 
 eda_sample %>%
   filter(label != 0) %>%
   group_by(label) %>%
   summarize(meanndai = mean(NDAI),
             minndai = min(NDAI),
             maxndai = max(NDAI))
-```
 
-```{r}
-#density plot of that
-eda_sample %>%
-  filter(label == 1) %>%
-  ggplot(aes(x = NDAI)) +
-  geom_density(fill = 2, alpha = 0.5) + 
-  geom_density(data = eda_sample %>% filter(label == -1), 
-               fill = 3, alpha = 0.5) +
-  geom_density(data = eda_sample %>% filter(label == 0), 
-               fill = 1, alpha = 0.5)
-```
-
-```{r}
+# summarizing SD 
 eda_sample %>%
   filter(label != 0) %>%
   group_by(label) %>%
   summarize(meanSD = mean(SD),
             minSD = min(SD),
             maxSD = max(SD))
-```
 
-This looks interesting, lets plot
-
-```{r}
-eda_sample %>%
-  filter(label == 1) %>%
-  ggplot(aes(x = SD)) +
-  geom_density(fill = 2, alpha = 0.5) + 
-  geom_density(data = eda_sample %>% filter(label == -1), 
-               fill = 3, alpha = 0.5) #+
-  # to show unlabeled
-  #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
-```
-
-```{r}
+# summarizing CORR 
 eda_sample %>%
   filter(label != 0) %>%
   group_by(label) %>%
   summarize(meanCORR = mean(CORR),
             minCORR = min(CORR),
             maxCORR = max(CORR))
-```
 
-```{r}
-#density plot of that
-eda_sample %>%
+# =============================================================================
+# making plots of the features 
+# TODO: add labels below? 
+# =============================================================================
+
+# plotting SD 
+sd_plot = eda_sample %>%
+  filter(label == 1) %>%
+  ggplot(aes(x = SD)) +
+  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(data = eda_sample %>% filter(label == -1), 
+                 fill = 3, alpha = 0.5)
+
+#density of NDAI
+ndai_plot = eda_sample %>%
+  filter(label == 1) %>%
+  ggplot(aes(x = NDAI)) +
+  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(data = eda_sample %>% filter(label == -1), 
+               fill = 3, alpha = 0.5)
+
+#density plot of CORR
+corr_plot = eda_sample %>%
   filter(label == 1) %>%
   ggplot(aes(x = CORR)) +
   geom_density(fill = 2, alpha = 0.5) + 
   geom_density(data = eda_sample %>% filter(label == -1), 
-               fill = 3, alpha = 0.5) #+
-  #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+               fill = 3, alpha = 0.5)
+
+sd_plot + ndai_plot + corr_plot
 ```
 
 ```{r}
@@ -177,7 +171,8 @@ p1 = eda_sample %>%
   filter(label != 0) %>%
   ggplot() +
   geom_point(aes(x = NDAI, y = CORR, col = as.factor(label)))
-
+  theme(legend.position = "none")
+  
 p2 = eda_sample %>%
   filter(label != 0) %>%
   ggplot() +
@@ -191,13 +186,10 @@ p3 = eda_sample %>%
   theme(legend.position = "none")
 
 p1/(p2+p3)
+
 ```
 
 #### analysis on the silly little angles
-
-```{r}
-head(eda_sample)
-```
 
 Notes on angular features: (re plot below) green is non-cloud, pink is cloud\] DF: very much overlap, -1 has most density in a smaller range than with 1 CF: upper values for -1, but vals still overlap BF: upper values for -1, but vals still overlap (maybe more extreme than with CF) AF: upper values for -1, but vals still overlap. -1 has a much much narrower range than 1 AN: upper values for -1, but vals still overlap. -1 has a much much narrower range than 1
 
@@ -207,8 +199,8 @@ eda_sample %>%
   #replace x = with feature of choosing
   ggplot(aes(x = BF, y = ..density..)) +
   geom_histogram(fill = 2, alpha = 0.5) + 
-  geom_histogram(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
-  #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+  geom_histogram(data = eda_sample %>% filter(label == -1), 
+                 fill = 3, alpha = 0.5)
 ```
 
 Boxplots, fix y labels when we decide
@@ -226,7 +218,7 @@ ggplot(eda_sample, aes(x=as.factor(label),y=BF, fill=label)) +
 ggplot(eda_sample, aes(x=as.factor(label),y=SD, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
-  labs(title = "Labels vs. BF", 
+  labs(title = "Labels vs. SD", 
        x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
@@ -235,7 +227,7 @@ ggplot(eda_sample, aes(x=as.factor(label),y=SD, fill=label)) +
 ggplot(eda_sample, aes(x=as.factor(label),y=NDAI, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
-  labs(title = "Labels vs. BF", 
+  labs(title = "Labels vs. NDAI", 
        x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
@@ -244,7 +236,7 @@ ggplot(eda_sample, aes(x=as.factor(label),y=NDAI, fill=label)) +
 ggplot(eda_sample, aes(x=as.factor(label),y=CORR, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
-  labs(title = "Labels vs. BF", 
+  labs(title = "Labels vs. CORR", 
        x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 ```
