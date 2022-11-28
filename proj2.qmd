@@ -20,8 +20,6 @@ half page summary of paper
 
 ## b) summary of data
 
-Summarize the data, i.e., % of pixels for the different classes. Plot well-labeled beautiful maps using x, y coordinates the expert labels with color of the region based on the expert labels. Do you observe some trend/pattern? Is an i.i.d. assumption for the samples justified for this dataset?
-
 ```{r cache=TRUE}
 # loading data 
 img1 = data.frame(read.table("image_data/imagem1.txt"))
@@ -29,7 +27,7 @@ img2 = data.frame(read.table("image_data/imagem2.txt"))
 img3 = data.frame(read.table("image_data/imagem3.txt"))
 
 # name the columns  
-col_names = c("y", "x", "label", "NDAI", "CD", "CORR", "DF","CF","BF","AF","AN")
+col_names = c("y", "x", "label", "NDAI", "SD", "CORR", "DF","CF","BF","AF","AN")
 colnames(img1) = col_names
 colnames(img2) = col_names
 colnames(img3) = col_names
@@ -230,7 +228,7 @@ ggplot(eda_sample, aes(x=as.factor(label),y=BF, fill=label)) +
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # maybe? 
-ggplot(eda_sample, aes(x=as.factor(label),y=CD, fill=label)) + 
+ggplot(eda_sample, aes(x=as.factor(label),y=SD, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. BF", 
@@ -256,9 +254,9 @@ ggplot(eda_sample, aes(x=as.factor(label),y=CORR, fill=label)) +
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 ```
 
-# 2)
+# 2) preparation
 
-## a)
+## a) data split 
 
 The first, and most naive approach, would be to simply treat the three images as training, validation, and test data sets respectively. We know the data is not i.i.d, so it would be inappropriate to randomly sample points for our different sets.
 
@@ -290,7 +288,7 @@ alt_validate = data.frame(rbind(img1[92090:115110,],
                              img3[69131:92174,]))
 ```
 
-## b)
+## b) baseline 
 
 The trivial classifier would have high accuracy if the image was mostly cloud-free. Since we're a little below 50%, the trivial classifier does not work well. Though, if we switched to classifying everything as a cloud we would have greater than 50% accuracy. However, we have a fairly high degree of uncertainty in our test and validation data. In the test data, about 27% of the points are labeled 0 for uncertain, and in the validation data, 70% are uncertain. So while the trivial classifier does poorly, we have to consider the uncertainty associated with it.
 
@@ -307,7 +305,7 @@ alt_test |> count(label)
 alt_validate |> count(label)
 ```
 
-## c)
+## c) best features 
 
 -   want our data to be separated
 -   like lec16 on oct27 for classification error metrics?
@@ -320,7 +318,7 @@ alt_validate |> count(label)
 head(img_combined)
 ```
 
-## d)
+## d) CV function - separate R file 
 
 Toy example to illustrate log loss, will put this in CV function for logistic reg
 
@@ -335,14 +333,6 @@ log_loss = function(y,y.pred) {
   L = sum(-y * log(y.pred) - (1-y) * log(1-y.pred))
   return(L)
   }
-```
-
-```{r}
-n <- 10 # sample size
-y = sample(c(0,1), replace=TRUE, size=n)
-pred_y = runif(10,0,1)
-
-log_loss(y,pred_y)
 ```
 
 ```{r}
@@ -390,19 +380,21 @@ CVmaster(classifier = fit,
          loss = log_loss) # fn
 ```
 
-# 4)
+# 3) modeling 
 
 note:
 
 be careful with Hyperparameter choices
 
-• dimension in PCA • K in K-means, or GMM
+• dimension in PCA
+
+• K in K-means, or GMM
 
 • regularization parameter in regularlized methods
 
 • number of trees in random forests
 
-## a)
+## a) fitting
 
 ```{r}
 #CHANGE THIS WITH REAL NOT EDA SAMPLE (if we want to do tidymodels)
@@ -463,3 +455,9 @@ qda
 ```{r}
 
 ```
+
+## b) ROC curves 
+
+## c) (bonus) other metrics 
+
+# 4) Diagnostics 
