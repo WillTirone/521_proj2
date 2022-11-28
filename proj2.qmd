@@ -151,7 +151,7 @@ This looks interesting, lets plot
 ```{r}
 eda_sample %>%
   filter(label == 1) %>%
-  ggplot(aes(x = CD)) +
+  ggplot(aes(x = SD)) +
   geom_density(fill = 2, alpha = 0.5) + 
   geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
   #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
@@ -256,7 +256,7 @@ ggplot(eda_sample, aes(x=as.factor(label),y=CORR, fill=label)) +
 
 # 2) preparation
 
-## a) data split 
+## a) data split
 
 The first, and most naive approach, would be to simply treat the three images as training, validation, and test data sets respectively. We know the data is not i.i.d, so it would be inappropriate to randomly sample points for our different sets.
 
@@ -288,7 +288,7 @@ alt_validate = data.frame(rbind(img1[92090:115110,],
                              img3[69131:92174,]))
 ```
 
-## b) baseline 
+## b) baseline
 
 The trivial classifier would have high accuracy if the image was mostly cloud-free. Since we're a little below 50%, the trivial classifier does not work well. Though, if we switched to classifying everything as a cloud we would have greater than 50% accuracy. However, we have a fairly high degree of uncertainty in our test and validation data. In the test data, about 27% of the points are labeled 0 for uncertain, and in the validation data, 70% are uncertain. So while the trivial classifier does poorly, we have to consider the uncertainty associated with it.
 
@@ -305,7 +305,7 @@ alt_test |> count(label)
 alt_validate |> count(label)
 ```
 
-## c) best features 
+##  c) best features
 
 -   want our data to be separated
 -   like lec16 on oct27 for classification error metrics?
@@ -318,7 +318,7 @@ alt_validate |> count(label)
 head(img_combined)
 ```
 
-## d) CV function - separate R file 
+## d) CV function - separate R file
 
 Toy example to illustrate log loss, will put this in CV function for logistic reg
 
@@ -338,49 +338,53 @@ log_loss = function(y,y.pred) {
 ```{r}
 CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
   
+  # setting fit type for use in predictions later
+  if (fit$family$family == "binomial"){
+    fit_type = 'response'
+  } else {
+    fit_type = ''
+  }
+  
   # data frame to output 
   output = data.frame(k = NA, loss = NA)
   
   # creating k folds 
+  # change based on how we did this in part 2 
   val = createFolds(train_labels, k = folds)
   
   for (i in 1:folds){
     
     # predict on validation set 
-    predictions = predict(classifier,train_feat[val[[i]],],type='response')
+    predictions = predict(classifier,
+                          data.frame(train_feat[val[[i]],]),
+                          type=fit_type)
     
     # calculate an arbitrary loss function 
-    # for example, log loss for logistic regression
-    L = loss(train_labels, predictions)
+    L = loss(train_labels[val[[i]]], predictions)
     
     # then rbind 
-    rbind(ouput, c(k,L))
+    output = rbind(output, c(i,L))
   }
   
   return(output)
 }
 ```
 
-Trying to check CV function on mtcars
-
-Using WHOLE thing as validation set
+Example using small subset of data
 
 ```{r}
-fit = glm(vs ~ mpg, data = mtcars, family = 'binomial')
-train_features = mtcars[,c("mpg")] # just used mpg as feature 
-train_lab = mtcars[,c('vs')] # 0 1 label 
-
-
-predict(fit, train_features)
-
+subset = img1[0:1000,]
+train_features = img1[0:1000,c("SD","CORR","DF")]
+train_lab = img1[0:1000,c("label")]
+fit = glm(label ~ SD + CORR + DF, data = subset, family='binomial')
 
 CVmaster(classifier = fit,
          train_feat = train_features, 
          train_labels = train_lab, 
-         loss = log_loss) # fn
+         loss = log_loss) 
 ```
 
-# 3) modeling 
+# 3) modeling
 
 note:
 
@@ -407,7 +411,7 @@ test = eda_sample[indicies,]
 train_cvs <- vfold_cv(train, v = 5)
 train_recipie <- recipe(label ~ ., data = train)
 
-train_recipie2 <- recipe(label ~ . data = train) %>%
+train_recipie2 <- recipe(label ~ ., data = train) %>%
   step_dummy(all_nominal()) %>%
   step_normalize(all_numeric(), -label)
 ```
@@ -423,7 +427,7 @@ logreg_model = logistic_reg() %>%
 Logistic Regression w L1 penalty
 
 ```{r}
-
+fit = glm(label ~ SD + CORR + DF, data = subset, family='binomial')
 ```
 
 QDA
@@ -450,14 +454,8 @@ tree_fit <- tree_wflow %>%
 tree_fit %>% collect_metrics()
 ```
 
-qda
+## b) ROC curves
 
-```{r}
+## c) (bonus) other metrics
 
-```
-
-## b) ROC curves 
-
-## c) (bonus) other metrics 
-
-# 4) Diagnostics 
+# 4) Diagnostics
