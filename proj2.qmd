@@ -215,7 +215,7 @@ Boxplots, fix y labels when we decide
 
 ```{r}
 
-ggplot(eda_sample, aes(x=as.factor(label),y=BF, fill=label)) + 
+ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=BF, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. BF", 
@@ -223,30 +223,33 @@ ggplot(eda_sample, aes(x=as.factor(label),y=BF, fill=label)) +
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # maybe? 
-ggplot(eda_sample, aes(x=as.factor(label),y=SD, fill=label)) + 
+ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=log(SD + 0.001), fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
-  labs(title = "Labels vs. BF", 
+  labs(title = "Labels vs. log(SD)", 
        x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # NDAI
 # good predictor for -1 
-ggplot(eda_sample, aes(x=as.factor(label),y=NDAI, fill=label)) + 
+ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=NDAI, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
-  labs(title = "Labels vs. BF", 
+  labs(title = "Labels vs. NDAI", 
        x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # CORR 
 # good predictor for 1 
-ggplot(eda_sample, aes(x=as.factor(label),y=CORR, fill=label)) + 
+ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=CORR, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
-  labs(title = "Labels vs. BF", 
+  labs(title = "Labels vs. CORR", 
        x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
+```
+```{r}
+names(eda_sample)
 ```
 
 # 2) preparation
