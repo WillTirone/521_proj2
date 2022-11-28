@@ -45,6 +45,8 @@ lab_combined = rbind(img1[,c("x", "y", "label","source")],
 # change to factors to color when plotting 
 lab_combined$label = as.factor(lab_combined$label)
 
+# combining everything for later 
+img_combined = rbind(img1,img2,img3)
 ```
 
 Geographic plot
@@ -76,31 +78,19 @@ ggplot(lab_combined2, aes(label,fill=label)) +
   scale_fill_brewer("Expert \nLabel")
 ```
 
-```{r}
-#for reference
-ggplot(lab_combined, aes(label,fill=label)) + 
-  geom_bar() + 
-  facet_grid(cols = vars(source)) + 
-  labs(title = "Images With Expert Labels",
-       subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
-  ylab("Count of Pixels")
-```
-
 ## c) EDA
 
 For some basic EDA, I took a random sample of the total data to allow for quicker plotting. This should retain the structure of the data, but may remove some outliers.
 
 ```{r}
 set.seed(1124)
-img_combined = rbind(img1,img2,img3)
 eda_sample = sample_n(img_combined,10000)
-head(eda_sample)
 ```
 
 PCA
 
 ```{r }
-rand.pca = prcomp(eda_sample[,3:11], center=TRUE, scale = TRUE)
+rand.pca = prcomp(eda_sample[,4:11], center=TRUE, scale = TRUE)
 fviz_pca_biplot(rand.pca, geom="point", habillage = eda_sample$label)
 ```
 
@@ -133,8 +123,10 @@ eda_sample %>%
   filter(label == 1) %>%
   ggplot(aes(x = NDAI)) +
   geom_density(fill = 2, alpha = 0.5) + 
-  geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) +
-  geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
+  geom_density(data = eda_sample %>% filter(label == -1), 
+               fill = 3, alpha = 0.5) +
+  geom_density(data = eda_sample %>% filter(label == 0), 
+               fill = 1, alpha = 0.5)
 ```
 
 ```{r}
@@ -153,7 +145,9 @@ eda_sample %>%
   filter(label == 1) %>%
   ggplot(aes(x = SD)) +
   geom_density(fill = 2, alpha = 0.5) + 
-  geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
+  geom_density(data = eda_sample %>% filter(label == -1), 
+               fill = 3, alpha = 0.5) #+
+  # to show unlabeled
   #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
 ```
 
@@ -172,7 +166,8 @@ eda_sample %>%
   filter(label == 1) %>%
   ggplot(aes(x = CORR)) +
   geom_density(fill = 2, alpha = 0.5) + 
-  geom_density(data = eda_sample %>% filter(label == -1), fill = 3, alpha = 0.5) #+
+  geom_density(data = eda_sample %>% filter(label == -1), 
+               fill = 3, alpha = 0.5) #+
   #geom_density(data = eda_sample %>% filter(label == 0), fill = 1, alpha = 0.5)
 ```
 
@@ -258,9 +253,15 @@ ggplot(eda_sample, aes(x=as.factor(label),y=CORR, fill=label)) +
 
 ## a) data split
 
+### 1)
+
 The first, and most naive approach, would be to simply treat the three images as training, validation, and test data sets respectively. We know the data is not i.i.d, so it would be inappropriate to randomly sample points for our different sets.
 
+### 2)
+
 Second, since the data is correlated, we can hand-pick slices from each of the three images that result in the desired split, but in a way that retains the ordering. If we split each image into three chunks, we can then choose the first, middle, and last chunk for each of the desired sets and combine them. If, for some reason, there is some kind of feature or interesting detail present in the "position" of a slice of the data, hopefully this will allow us to capture it without overstating accuracy in training. To do this, we calculated the indices by hand.
+
+### 3)
 
 third: create a grid, not across images but training/validation/test in each of the splits and do that three times for each image? (lecture 13 / oct18). ex/ with 9 blocks, use 7 for training, one for validation , one for prediction, usual CV error. since we want to preserve spacial dependency.
 
@@ -305,7 +306,7 @@ alt_test |> count(label)
 alt_validate |> count(label)
 ```
 
-##  c) best features
+## c) best features
 
 -   want our data to be separated
 -   like lec16 on oct27 for classification error metrics?
@@ -314,13 +315,7 @@ alt_validate |> count(label)
 
 -in model pred, keep pt order
 
-```{r}
-head(img_combined)
-```
-
 ## d) CV function - separate R file
-
-Toy example to illustrate log loss, will put this in CV function for logistic reg
 
 ```{r}
 # loss function example 
@@ -332,7 +327,11 @@ log_loss = function(y,y.pred) {
   
   L = sum(-y * log(y.pred) - (1-y) * log(1-y.pred))
   return(L)
-  }
+}
+
+gini = function(x,y){
+  # gini loss for tree? 
+}
 ```
 
 ```{r}
@@ -349,7 +348,6 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
   output = data.frame(k = NA, loss = NA)
   
   # creating k folds 
-  # change based on how we did this in part 2 
   val = createFolds(train_labels, k = folds)
   
   for (i in 1:folds){
@@ -400,58 +398,61 @@ be careful with Hyperparameter choices
 
 ## a) fitting
 
+Here, merging training and validation data:
+
 ```{r}
-#CHANGE THIS WITH REAL NOT EDA SAMPLE (if we want to do tidymodels)
-set.seed(1124)
-indicies = sample(10000, 200)
-train = eda_sample[-indicies,]
-test = eda_sample[indicies,]
+# method 1 
 
-#cvs and recipie
-train_cvs <- vfold_cv(train, v = 5)
-train_recipie <- recipe(label ~ ., data = train)
+merge_m1 = rbind(naive_train, naive_validate)
+merge_m1 = merge_m1 |> 
+  select(label, NDAI, SD, CORR) |> 
+  filter(label != 0) |> 
+  mutate(label = as.factor(label))
 
-train_recipie2 <- recipe(label ~ ., data = train) %>%
-  step_dummy(all_nominal()) %>%
-  step_normalize(all_numeric(), -label)
+# method 2 
+
+merge_m2 = rbind(alt_train, alt_validate)
+merge_m2 = merge_m2 |> 
+  select(label, NDAI, SD, CORR) |> 
+  filter(label != 0) |> 
+  mutate(label = as.factor(label))
 ```
 
 Logistic Regression
 
-```{r}
-logreg_model = logistic_reg() %>%
-  set_mode("classification") %>%
-  set_engine("glm")
+```{r cache=TRUE}
+fit1 = glm(label ~ .,
+           data = merge_m1, 
+           family='binomial')
+
+fit2 = glm(label ~ .,
+           data = merge_m2, 
+           family='binomial')
+
 ```
 
 Logistic Regression w L1 penalty
 
 ```{r}
-fit = glm(label ~ SD + CORR + DF, data = subset, family='binomial')
+
 ```
 
-QDA
+QDA / LDA
 
 ```{r}
 
 ```
 
-tree
+Naive Bayes
 
 ```{r}
-#tree model
-tree_mod <- decision_tree() %>%
-  set_engine("rpart") %>%
-  set_mode("classification")
 
-tree_wflow <- workflow() %>%
-  add_recipe(train_recipie) %>%
-  add_model(tree_mod)
+```
 
-tree_fit <- tree_wflow %>%
-  fit_resamples(train_cvs, metrics = metric_set(accuracy, roc_auc, precision, recall))
+Some kind of tree-based model
 
-tree_fit %>% collect_metrics()
+```{r}
+
 ```
 
 ## b) ROC curves
