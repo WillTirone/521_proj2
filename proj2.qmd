@@ -207,11 +207,11 @@ Boxplots, fix y labels when we decide
 
 ```{r}
 
-ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=BF, fill=label)) + 
+ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=AN, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
-  labs(title = "Labels vs. BF", 
-       x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
+  labs(title = "Labels vs. AN", 
+       x = "-1: No Cloud | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # maybe? 
@@ -219,7 +219,7 @@ ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=log(SD + 0.00
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. log(SD)", 
-       x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
+       x = "-1: No Cloud | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # NDAI
@@ -228,7 +228,7 @@ ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=NDAI, fill=la
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. NDAI", 
-       x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
+       x = "-1: No Cloud | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # CORR 
@@ -237,7 +237,7 @@ ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=CORR, fill=la
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. CORR", 
-       x = "-1: No Cloud | 0 : Uncertain | 1 : Cloud",
+       x = "-1: No Cloud | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 ```
 
