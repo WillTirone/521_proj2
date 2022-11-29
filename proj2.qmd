@@ -207,11 +207,11 @@ eda_sample %>%
                  fill = 3, alpha = 0.5)
 ```
 
-Boxplots, fix y labels when we decide
+Boxplots:
 
 ```{r}
 
-ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=AN, fill=label)) + 
+b1  = ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=AN, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. AN", 
@@ -219,7 +219,7 @@ ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=AN, fill=labe
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 
 # maybe? 
-ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=log(SD + 0.001), fill=label)) + 
+b2 = ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=log(SD + 0.001), fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. log(SD)", 
@@ -228,7 +228,7 @@ ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=log(SD + 0.00
 
 # NDAI
 # good predictor for -1 
-ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=NDAI, fill=label)) + 
+b3 = ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=NDAI, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. NDAI", 
@@ -237,12 +237,15 @@ ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=NDAI, fill=la
 
 # CORR 
 # good predictor for 1 
-ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=CORR, fill=label)) + 
+b4 = ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=CORR, fill=label)) + 
   geom_boxplot(alpha=.7) + 
   theme(legend.position = "none") + 
   labs(title = "Labels vs. CORR", 
        x = "-1: No Cloud | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
+
+
+(b1 + b2) / (b3 + b4) 
 ```
 
 # 2) preparation
