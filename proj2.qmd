@@ -425,28 +425,39 @@ merge_m2 = merge_m2 |>
 Logistic Regression
 
 ```{r cache=TRUE}
+#NAIVE
 fit1 = glm(label ~ .,
            data = merge_m1, 
            family='binomial')
 
+glm1.probs <- predict(fit1, naive_test, type = "response")
+
+
+#ALTERNATE
 fit2 = glm(label ~ .,
            data = merge_m2, 
            family='binomial')
-
+glm1.probs <- predict(fit2, alt_test, type = "response")
 ```
+
 
 Logistic Regression w L1 penalty
 
 ```{r}
+#NAIVE
 fit1penalty = glm(label ~ .,
            data = merge_m1, 
            alpha = 1, #lasso
            family='binomial')
+glm1.probs <- predict(fit1penalty, naive_test, type = "response")
 
+
+#ALTERNATE
 fit2penalty = glm(label ~ .,
            data = merge_m2, 
            alpha = 1, #lasso 
            family='binomial')
+glm1.probs <- predict(fit2penalty, alt_test, type = "response")
 ```
 
 QDA / LDA
@@ -486,7 +497,13 @@ Naive Bayes
 
 ```{r}
 library(e1071)
+#NAIVE^2
 nb.fit <- naiveBayes(label ~ ., data = merge_m1)
+nb.preds <- predict(nb.fit, naive_test, type = "raw")
+
+#ALTERNATE
+nb.fit <- naiveBayes(label ~ ., data = merge_m2)
+nb.preds <- predict(nb.fit, alt_test, type = "raw")
 ```
 
 Some kind of tree-based model
@@ -507,7 +524,7 @@ text(cloudtree, pretty = 0)
 
 ## b) ROC curves
 ```{r}
-
+#see if code in part a runs if so it's there
 ```
 
 
