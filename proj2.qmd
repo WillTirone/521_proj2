@@ -141,28 +141,30 @@ eda_sample %>%
 # plotting SD 
 sd_plot = eda_sample %>%
   filter(label == 1) %>%
-  ggplot(aes(x = SD)) +
-  geom_density(fill = 2, alpha = 0.5) + 
+  ggplot(aes(x = log(SD))) +
+  geom_density(fill = "lightblue", alpha = 0.8) + 
   geom_density(data = eda_sample %>% filter(label == -1), 
-                 fill = 3, alpha = 0.5)
+                 fill = "magenta", alpha = 0.4)
 
 #density of NDAI
 ndai_plot = eda_sample %>%
   filter(label == 1) %>%
   ggplot(aes(x = NDAI)) +
-  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(fill = "lightblue", alpha = 0.8) + 
   geom_density(data = eda_sample %>% filter(label == -1), 
-               fill = 3, alpha = 0.5)
+               fill = "magenta", alpha = 0.4)
 
 #density plot of CORR
 corr_plot = eda_sample %>%
   filter(label == 1) %>%
   ggplot(aes(x = CORR)) +
-  geom_density(fill = 2, alpha = 0.5) + 
+  geom_density(aes(fill = "Cloud"), alpha = 0.8) + 
   geom_density(data = eda_sample %>% filter(label == -1), 
-               fill = 3, alpha = 0.5) + 
-  theme(legend.position = "bottom") + 
-  labs(fill = "Expert Label")
+               aes(fill = "No Cloud"), alpha = 0.4) + 
+  scale_fill_manual(name = "Expert Label", 
+                     breaks = c("Cloud", "No Cloud"),
+                     values = c("Cloud" = "lightblue",
+                                "No Cloud" = "magenta"))
 
 sd_plot + ndai_plot + corr_plot 
 ```
