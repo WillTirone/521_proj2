@@ -440,12 +440,12 @@ Logistic Regression w L1 penalty
 ```{r}
 fit1penalty = glm(label ~ .,
            data = merge_m1, 
-           alpha = 1,
+           alpha = 1, #lasso
            family='binomial')
 
 fit2penalty = glm(label ~ .,
            data = merge_m2, 
-           alpha = 1,
+           alpha = 1, #lasso 
            family='binomial')
 ```
 
@@ -453,9 +453,34 @@ QDA / LDA
 
 ```{r}
 #pg 170 ISL
+
+#NAIVE WAY
 qda.fit <- qda(label ~ ., data = merge_m1)
-lda.fit <- lda(label ~ ., data = merge_m1)
+qda.class <- predict(qda.fit, naive_test)$class
+
+test_prob = predict(qda.fit, naive_test, type = "response")
+test_roc = roc(naive_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
+
+#WAY NUMBER 2
+qda.fit <- qda(label ~ ., data = merge_m2)
+qda.class <- predict(qda.fit, alt_test)$class
+
+test_prob = predict(qda.fit, alt_test, type = "response")
+test_roc = roc(alt_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
 ```
+
+```{r}
+#NAIVE
+lda.fit <- lda(label ~ ., data = merge_m1)
+test_prob = predict(lda.fit, naive_test, type = "response")
+test_roc = roc(naive_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
+
+#ALTERNATIVE
+lda.fit <- lda(label ~ ., data = merge_m2)
+test_prob = predict(lda.fit, alt_test, type = "response")
+test_roc = roc(alt_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
+```
+
 
 Naive Bayes
 
@@ -467,10 +492,24 @@ nb.fit <- naiveBayes(label ~ ., data = merge_m1)
 Some kind of tree-based model
 
 ```{r}
-tree(label ~ ., merge_m1)
+#NAIVE
+cloudtree = tree(label ~ ., merge_m1)
+plot(cloudtree)
+text(cloudtree, pretty = 0)
+#cloudtree.pred <- predict(cloudtree, naive_test, type = "class")
+
+#ALTERNATE
+cloudtree = tree(label ~ ., merge_m2)
+plot(cloudtree)
+text(cloudtree, pretty = 0)
+#cloudtree.pred <- predict(cloudtree, alt_test, type = "class")
 ```
 
 ## b) ROC curves
+```{r}
+
+```
+
 
 ## c) (bonus) other metrics
 
