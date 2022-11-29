@@ -10,6 +10,9 @@ library(latex2exp)
 library(tidymodels)
 library(patchwork)
 })
+
+# importing CV master function 
+# source("CVmaster.R")
 ```
 
 # 1)
@@ -319,8 +322,7 @@ alt_validate |> count(label)
 ## d) CV function - separate R file
 
 ```{r}
-# loss function example 
-# https://developers.google.com/machine-learning/crash-course/logistic-regression/model-training
+# a different loss example 
 log_loss = function(y,y.pred) { 
   
   # y is label in train data 
@@ -330,13 +332,19 @@ log_loss = function(y,y.pred) {
   return(L)
 }
 
-gini = function(x,y){
-  # gini loss for tree? 
+
+# classification loss function 
+classification_error = function(y,y.pred){
+  L = 1 - mean(y==y.pred)
+  return(L)
 }
 ```
 
 ```{r}
+
+
 CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
+
   
   # setting fit type for use in predictions later
   if (fit$family$family == "binomial"){
@@ -349,7 +357,7 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
   output = data.frame(k = NA, loss = NA)
   
   # creating k folds 
-  val = createFolds(train_labels, k = folds)
+  val = createFolds(train_labels$label, k = folds)
   
   for (i in 1:folds){
     
@@ -358,11 +366,21 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
                           data.frame(train_feat[val[[i]],]),
                           type=fit_type)
     
+    # from probability calc label 
+    # need pred_labels to be -1 or 1 
+    if (fit_type == 'response'){
+      pred_labels = rep(-1, length(predictions))
+      pred_labels[predictions > 0.5] = 1
+    } else {
+      print('model not supported')
+    }
+    
     # calculate an arbitrary loss function 
-    L = loss(train_labels[val[[i]]], predictions)
+    L = loss(train_labels[val[[i]]], pred_labels)
     
     # then rbind 
     output = rbind(output, c(i,L))
+    
   }
   
   return(output)
@@ -372,15 +390,31 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
 Example using small subset of data
 
 ```{r}
+# data
 subset = img1[0:1000,]
 train_features = img1[0:1000,c("SD","CORR","DF")]
 train_lab = img1[0:1000,c("label")]
+
+# fitting
 fit = glm(label ~ SD + CORR + DF, data = subset, family='binomial')
+
+# predicting 
+glm.prob = predict(fit, train_features, type='response')
+
+# this will be outside of function 
+glm.pred = rep(-1,1000)
+glm.pred[glm.prob > 0.5] = 1 
+
+# feed this in as loss argument
+glm.pred[0:20]
+
+table(glm.pred,train_lab)
 
 CVmaster(classifier = fit,
          train_feat = train_features, 
-         train_labels = train_lab, 
-         loss = log_loss) 
+         train_labels = train_lab,
+         folds=10,
+         loss = classification_error) 
 ```
 
 # 3) modeling
@@ -410,6 +444,10 @@ merge_m1 = merge_m1 |>
   filter(label != 0) |> 
   mutate(label = as.factor(label))
 
+# splitting into features and labels 
+merge_m1_feat = merge_m1 |> select(NDAI,SD,CORR)
+merge_m1_lab = merge_m1 |> select(label)
+
 # method 2 
 
 merge_m2 = rbind(alt_train, alt_validate)
@@ -417,6 +455,10 @@ merge_m2 = merge_m2 |>
   select(label, NDAI, SD, CORR) |> 
   filter(label != 0) |> 
   mutate(label = as.factor(label))
+
+merge_m1_feat = merge_m2 |> select(NDAI,SD,CORR)
+merge_m1_lab = merge_m2 |> select(label)
+
 ```
 
 Logistic Regression
@@ -430,6 +472,17 @@ fit2 = glm(label ~ .,
            data = merge_m2, 
            family='binomial')
 
+# CV  
+# fit with first split method 
+CVmaster(classifier = fit1,
+         train_feat = merge_m1_feat, 
+         train_labels = merge_m1_lab,
+         folds= 10,
+         loss = classification_error) 
+
+# fit with second split method 
+
+merge_m1_lab
 ```
 
 Logistic Regression w L1 penalty
