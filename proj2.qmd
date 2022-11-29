@@ -160,9 +160,11 @@ corr_plot = eda_sample %>%
   ggplot(aes(x = CORR)) +
   geom_density(fill = 2, alpha = 0.5) + 
   geom_density(data = eda_sample %>% filter(label == -1), 
-               fill = 3, alpha = 0.5)
+               fill = 3, alpha = 0.5) + 
+  theme(legend.position = "bottom") + 
+  labs(fill = "Expert Label")
 
-sd_plot + ndai_plot + corr_plot
+sd_plot + ndai_plot + corr_plot 
 ```
 
 ```{r}
@@ -170,7 +172,7 @@ sd_plot + ndai_plot + corr_plot
 p1 = eda_sample %>%
   filter(label != 0) %>%
   ggplot() +
-  geom_point(aes(x = NDAI, y = CORR, col = as.factor(label)))
+  geom_point(aes(x = NDAI, y = CORR, col = as.factor(label))) + 
   theme(legend.position = "none")
   
 p2 = eda_sample %>%
@@ -182,11 +184,13 @@ p2 = eda_sample %>%
 p3 = eda_sample %>%
   filter(label != 0) %>%
   ggplot() +
-  geom_point(aes(x = SD, y = CORR, col = as.factor(label)))+
-  theme(legend.position = "none")
+  geom_point(aes(x = SD, y = CORR, col = as.factor(label))) + 
+  theme(legend.position = "bottom") + 
+  labs(color = "Expert Label")
+  
 
-p1/(p2+p3)
-
+# combining plots with patchwork
+p1 / p2 / p3 
 ```
 
 #### analysis on the silly little angles
@@ -240,7 +244,6 @@ ggplot(eda_sample %>% filter(label != 0), aes(x=as.factor(label),y=CORR, fill=la
        x = "-1: No Cloud | 1 : Cloud",
        y = TeX("$45^{\\circ}$ front angle, MISR"))
 ```
-
 
 # 2) preparation
 
