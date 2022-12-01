@@ -11,6 +11,8 @@ library(tidymodels)
 library(patchwork)
 library(tree)
 library(glmnet)
+library(MASS)
+library(xgboost)
 })
 
 # importing CV master function 
@@ -353,7 +355,7 @@ custom_merge = function(df1,df2) {
   total = merge(df1,df2, by="k")
   colnames(total) = c("k","Val Method 1", "Val Method 2")
   total = total |> mutate(percent_diff = (total[,3] - total[,2])/total[,2] * 100)
-  print(as.tibble(total))
+  print(as_tibble(total))
   
   # maybe plot here 
   a = summary(total)
@@ -364,7 +366,8 @@ custom_merge = function(df1,df2) {
 ```{r}
 
 
-CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
+CVmaster = function(classifier, train_feat, train_labels, folds=5, loss,
+                    fit_type="response") {
 
   # input: 
     # classifier : generic fit object 
@@ -373,6 +376,7 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
     # folds : number of k folds for cross validation 
     # loss : generic loss function: 
       # currently supports classification loss 
+    # fit_type : type of fit
   
   # returns: 
     # output : data frame with columns c("k","loss"), i.e. loss at each 
@@ -380,13 +384,6 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
       # cross validation, take mean of output$loss 
   
   train_labels = train_labels$label
-  
-  # setting fit type for use in predictions later
-  if (fit$family$family == "binomial"){
-    fit_type = 'response'
-  } else {
-    fit_type = NULL
-  }
   
   # data frame to output 
   output = data.frame(k = NA, loss = NA)
@@ -407,9 +404,10 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
     if (fit_type == 'response'){
       pred_labels = rep(-1, length(predictions))
       pred_labels[predictions > 0.5] = 1
+    } else if (fit_type == 'class') {
+      pred_labels = predictions$class
     } else {
-      pred_labels = rep(-1, length(predictions))
-      pred_labels[predictions > 0.5] = 1
+      print("fit not supported")
     }
     
     # calculate an arbitrary loss function 
@@ -420,7 +418,8 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
     
   }
   
-  return(output)
+  # remove null row 
+  return(output[-1,])
 }
 ```
 
@@ -443,36 +442,45 @@ be careful with Hyperparameter choices
 Here, merging training and validation data:
 
 ```{r}
-# method 1 
 
+# method 1 
 total = rbind(naive_train, naive_validate)
 
+# all features from train and validate 
+# for first validation method 
 merge_m1_all = total |> 
   filter(label != 0) |> 
   mutate(label = as.factor(label))
 
+# selected features 
 merge_m1 = merge_m1_all |> 
-  select(label, NDAI, SD, CORR) 
+  dplyr::select(label, NDAI, SD, CORR) 
 
 # splitting into features and labels 
-merge_m1_feat = merge_m1 |> select(NDAI,SD,CORR)
-merge_m1_lab = merge_m1 |> select(label)
+# possibly remove this 
+merge_m1_feat = merge_m1 |> dplyr::select(NDAI,SD,CORR)
+merge_m1_lab = merge_m1 |> dplyr::select(label)
 
 # method 2 
-
 total.alt = rbind(alt_train, alt_validate)
 
+# all features from train and validate sets 
+# from second method 
 merge_m2_all = total.alt
 
+# all features again but no zeros 
 merge_m2_all = merge_m2_all |> 
   filter(label != 0) |> 
   mutate(label = as.factor(label))
 
+# selected features 
 merge_m2 = merge_m2_all |> 
-  select(label, NDAI, SD, CORR) 
+  dplyr::select(label, NDAI, SD, CORR) 
 
-merge_m2_feat = merge_m2 |> select(NDAI,SD,CORR)
-merge_m2_lab = merge_m2 |> select(label)
+# splitting features and labels 
+# may not need later
+merge_m2_feat = merge_m2 |> dplyr::select(NDAI,SD,CORR)
+merge_m2_lab = merge_m2 |> dplyr::select(label)
 ```
 
 Logistic Regression
@@ -510,6 +518,12 @@ cv.log2 = CVmaster(classifier = fit2,
 custom_merge(cv.log1,cv.log2)
 ```
 
+### TEST LOG REGRESSION
+
+```{r}
+
+```
+
 Logistic Regression w L1 penalty
 
 Variable selection
@@ -517,7 +531,7 @@ Variable selection
 ```{r cache=TRUE}
 
 # Logistic Regression with L1 Penalty 
-# source : http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
+
 
 set.seed(123) 
 cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
@@ -526,6 +540,7 @@ model <- glmnet(x, y, alpha = 1, family = "binomial",
                 lambda = cv.lasso$lambda.min)
 
 #NAIVE
+# cross validate to chooose best lambda 
 cv1.l1 = cv.glmnet(as.matrix(merge_m1_all[,c(-1,-2,-3,-12)]), #removing label
                    merge_m1_all[,3], # just label for x, y glmnet args
                    family = "binomial", 
@@ -538,6 +553,7 @@ log.l1.fit1 = glmnet(as.matrix(merge_m1_all[,c(-1,-2,-3,-12)]), #removing label
                    lambda = cv1.l1$lambda.min)
 
 #BLOCK
+# cross validate to chooose best lambda 
 cv2.l1 = cv.glmnet(as.matrix(merge_m2_all[,c(-1,-2,-3,-12)]), #removing label
                    merge_m2_all[,3], # just label for x, y glmnet args
                    family = "binomial", 
@@ -566,52 +582,55 @@ cv2.log.l1 = CVmaster(classifier = log.l1.fit2,
 custom_merge(cv1.log.l1, cv2.log.l1)
 ```
 
+#### TEST LOGISTIC WITH L1 PENALTY
+
+```{r}
+
+```
+
 QDA / LDA
 
 ```{r}
-#pg 170 ISL
 
 #NAIVE WAY
-qda.fit <- qda(label ~ ., data = merge_m1)
-qda.class <- predict(qda.fit, naive_test)$class
+qda.fit1 = qda(label ~ ., data = merge_m1)
+
+# CV 
+cv.qda1 = CVmaster(classifier = qda.fit1,
+                   train_feat = data.frame(merge_m1_feat), 
+                   train_labels = merge_m1_lab,
+                   folds= 10,
+                   loss = classification_error,
+                   fit_type='class')
+
+
+#BLOCK VALIDATION
+qda.fit2 = qda(label ~ ., data = merge_m2)
+
+# CV 
+cv.qda2 = CVmaster(classifier = qda.fit2,
+                   train_feat = data.frame(merge_m2_feat), 
+                   train_labels = merge_m2_lab,
+                   folds= 10,
+                   loss = classification_error,
+                   fit_type='class')
+
+custom_merge(cv.qda1, cv.qda2)
+```
+
+### TEST QDA
+
+```{r}
 
 test_prob = predict(qda.fit, naive_test, type = "response")
 test_roc = roc(naive_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
 
-#WAY NUMBER 2
-qda.fit <- qda(label ~ ., data = merge_m2)
-qda.class <- predict(qda.fit, alt_test)$class
 
 test_prob = predict(qda.fit, alt_test, type = "response")
 test_roc = roc(alt_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
 ```
 
-```{r}
-#NAIVE
-lda.fit <- lda(label ~ ., data = merge_m1)
-test_prob = predict(lda.fit, naive_test, type = "response")
-test_roc = roc(naive_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
-
-#ALTERNATIVE
-lda.fit <- lda(label ~ ., data = merge_m2)
-test_prob = predict(lda.fit, alt_test, type = "response")
-test_roc = roc(alt_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
-```
-
-Naive Bayes
-
-```{r}
-library(e1071)
-#NAIVE^2
-nb.fit <- naiveBayes(label ~ ., data = merge_m1)
-nb.preds <- predict(nb.fit, naive_test, type = "raw")
-
-#ALTERNATE
-nb.fit <- naiveBayes(label ~ ., data = merge_m2)
-nb.preds <- predict(nb.fit, alt_test, type = "raw")
-```
-
-Some kind of tree-based model
+BOOSTING
 
 ```{r}
 #NAIVE
@@ -627,6 +646,12 @@ text(cloudtree, pretty = 0)
 #cloudtree.pred <- predict(cloudtree, alt_test, type = "class")
 ```
 
+xgboost
+
+```{r}
+
+```
+
 ## b) ROC curves
 
 ```{r}
@@ -636,3 +661,9 @@ text(cloudtree, pretty = 0)
 ## c) (bonus) other metrics
 
 # 4) Diagnostics
+
+Resources
+
+#pg 170 ISL
+
+\# source : http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
