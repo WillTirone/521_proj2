@@ -344,10 +344,41 @@ classification_error = function(y,y.pred){
 ```
 
 ```{r}
+# function to merge and output basic stats 
+
+custom_merge = function(df1,df2) {
+  
+  # combine data frames and calculate difference
+  total = merge(df1,df2, by="k")
+  colnames(total) = c("k","Val Method 1", "Val Method 2")
+  total = total |> mutate(percent_diff = (total[,3] - total[,2])/total[,2])
+  print(as.tibble(total))
+  
+  # maybe plot here 
+  a = summary(total)
+  return(a)
+}
+```
+
+```{r}
 
 
 CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
 
+  # input: 
+    # classifier : generic fit object 
+    # train_feat : data frame object 
+    # train : data frame object with y labels, has column named "label"
+    # folds : number of k folds for cross validation 
+    # loss : generic loss function: 
+      # currently supports classification loss 
+  
+  # returns: 
+    # output : data frame with columns c("k","loss"), i.e. loss at each 
+      # fold k and not averaged over the k folds. To complete k-fold 
+      # cross validation, take mean of output$loss 
+  
+  train_labels = train_labels$label
   
   # setting fit type for use in predictions later
   if (fit$family$family == "binomial"){
@@ -360,7 +391,7 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
   output = data.frame(k = NA, loss = NA)
   
   # creating k folds 
-  val = createFolds(train_labels$label, k = folds)
+  val = createFolds(train_labels, k = folds)
   
   for (i in 1:folds){
     
@@ -388,36 +419,6 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
   
   return(output)
 }
-```
-
-Example using small subset of data
-
-```{r}
-# data
-subset = img1[0:1000,]
-train_features = img1[0:1000,c("SD","CORR","DF")]
-train_lab = img1[0:1000,c("label")]
-
-# fitting
-fit = glm(label ~ SD + CORR + DF, data = subset, family='binomial')
-
-# predicting 
-glm.prob = predict(fit, train_features, type='response')
-
-# this will be outside of function 
-glm.pred = rep(-1,1000)
-glm.pred[glm.prob > 0.5] = 1 
-
-# feed this in as loss argument
-glm.pred[0:20]
-
-table(glm.pred,train_lab)
-
-CVmaster(classifier = fit,
-         train_feat = train_features, 
-         train_labels = train_lab,
-         folds=10,
-         loss = classification_error) 
 ```
 
 # 3) modeling
@@ -459,9 +460,8 @@ merge_m2 = merge_m2 |>
   filter(label != 0) |> 
   mutate(label = as.factor(label))
 
-merge_m1_feat = merge_m2 |> select(NDAI,SD,CORR)
-merge_m1_lab = merge_m2 |> select(label)
-
+merge_m2_feat = merge_m2 |> select(NDAI,SD,CORR)
+merge_m2_lab = merge_m2 |> select(label)
 ```
 
 Logistic Regression
@@ -483,18 +483,21 @@ fit2 = glm(label ~ .,
 
 # CV  
 # fit with first split method 
-CVmaster(classifier = fit1,
+cv.log1 = CVmaster(classifier = fit1,
          train_feat = merge_m1_feat, 
          train_labels = merge_m1_lab,
          folds= 10,
-         loss = classification_error) 
+         loss = classification_error)
 
 # fit with second split method 
+cv.log2 = CVmaster(classifier = fit2,
+         train_feat = merge_m2_feat, 
+         train_labels = merge_m2_lab,
+         folds= 10,
+         loss = classification_error)
 
-merge_m1_lab
-
+custom_merge(cv.log1,cv.log2)
 ```
-
 
 Logistic Regression w L1 penalty
 
@@ -547,7 +550,6 @@ test_prob = predict(lda.fit, alt_test, type = "response")
 test_roc = roc(alt_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
 ```
 
-
 Naive Bayes
 
 ```{r}
@@ -578,10 +580,10 @@ text(cloudtree, pretty = 0)
 ```
 
 ## b) ROC curves
+
 ```{r}
 #see if code in part a runs if so it's there
 ```
-
 
 ## c) (bonus) other metrics
 
