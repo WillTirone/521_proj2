@@ -10,6 +10,7 @@ library(latex2exp)
 library(tidymodels)
 library(patchwork)
 library(tree)
+library(glmnet)
 })
 
 # importing CV master function 
@@ -351,7 +352,7 @@ custom_merge = function(df1,df2) {
   # combine data frames and calculate difference
   total = merge(df1,df2, by="k")
   colnames(total) = c("k","Val Method 1", "Val Method 2")
-  total = total |> mutate(percent_diff = (total[,3] - total[,2])/total[,2])
+  total = total |> mutate(percent_diff = (total[,3] - total[,2])/total[,2] * 100)
   print(as.tibble(total))
   
   # maybe plot here 
@@ -384,7 +385,7 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
   if (fit$family$family == "binomial"){
     fit_type = 'response'
   } else {
-    fit_type = ''
+    fit_type = NULL
   }
   
   # data frame to output 
@@ -397,16 +398,18 @@ CVmaster = function(classifier, train_feat, train_labels, folds=5, loss) {
     
     # predict on validation set 
     predictions = predict(classifier,
-                          data.frame(train_feat[val[[i]],]),
+                          train_feat[val[[i]],],
                           type=fit_type)
     
     # from probability calc label 
     # need pred_labels to be -1 or 1 
+    # improve for l1 logistic 
     if (fit_type == 'response'){
       pred_labels = rep(-1, length(predictions))
       pred_labels[predictions > 0.5] = 1
     } else {
-      print('model not supported')
+      pred_labels = rep(-1, length(predictions))
+      pred_labels[predictions > 0.5] = 1
     }
     
     # calculate an arbitrary loss function 
@@ -442,11 +445,14 @@ Here, merging training and validation data:
 ```{r}
 # method 1 
 
-merge_m1 = rbind(naive_train, naive_validate)
-merge_m1 = merge_m1 |> 
-  select(label, NDAI, SD, CORR) |> 
+total = rbind(naive_train, naive_validate)
+
+merge_m1_all = total |> 
   filter(label != 0) |> 
   mutate(label = as.factor(label))
+
+merge_m1 = merge_m1_all |> 
+  select(label, NDAI, SD, CORR) 
 
 # splitting into features and labels 
 merge_m1_feat = merge_m1 |> select(NDAI,SD,CORR)
@@ -454,11 +460,16 @@ merge_m1_lab = merge_m1 |> select(label)
 
 # method 2 
 
-merge_m2 = rbind(alt_train, alt_validate)
-merge_m2 = merge_m2 |> 
-  select(label, NDAI, SD, CORR) |> 
+total.alt = rbind(alt_train, alt_validate)
+
+merge_m2_all = total.alt
+
+merge_m2_all = merge_m2_all |> 
   filter(label != 0) |> 
   mutate(label = as.factor(label))
+
+merge_m2 = merge_m2_all |> 
+  select(label, NDAI, SD, CORR) 
 
 merge_m2_feat = merge_m2 |> select(NDAI,SD,CORR)
 merge_m2_lab = merge_m2 |> select(label)
@@ -467,55 +478,92 @@ merge_m2_lab = merge_m2 |> select(label)
 Logistic Regression
 
 ```{r cache=TRUE}
+
+# Standard Logistic Regression 
+
 #NAIVE
 fit1 = glm(label ~ .,
            data = merge_m1, 
            family='binomial')
-
-glm1.probs <- predict(fit1, naive_test, type = "response")
-
 
 #ALTERNATE
 fit2 = glm(label ~ .,
            data = merge_m2, 
            family='binomial')
 
-
 # CV  
 # fit with first split method 
+# must input data frame for glm 
 cv.log1 = CVmaster(classifier = fit1,
-         train_feat = merge_m1_feat, 
-         train_labels = merge_m1_lab,
-         folds= 10,
-         loss = classification_error)
+                   train_feat = data.frame(merge_m1_feat), 
+                   train_labels = merge_m1_lab,
+                   folds= 10,
+                   loss = classification_error)
 
 # fit with second split method 
 cv.log2 = CVmaster(classifier = fit2,
-         train_feat = merge_m2_feat, 
-         train_labels = merge_m2_lab,
-         folds= 10,
-         loss = classification_error)
+                   train_feat = data.frame(merge_m2_feat), 
+                   train_labels = merge_m2_lab,
+                   folds= 10,
+                   loss = classification_error)
 
 custom_merge(cv.log1,cv.log2)
 ```
 
 Logistic Regression w L1 penalty
 
-```{r}
+Variable selection
+
+```{r cache=TRUE}
+
+# Logistic Regression with L1 Penalty 
+# source : http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
+
+set.seed(123) 
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+# Fit the final model on the training data
+model <- glmnet(x, y, alpha = 1, family = "binomial",
+                lambda = cv.lasso$lambda.min)
+
 #NAIVE
-fit1penalty = glm(label ~ .,
-           data = merge_m1, 
-           alpha = 1, #lasso
-           family='binomial')
-glm1.probs <- predict(fit1penalty, naive_test, type = "response")
+cv1.l1 = cv.glmnet(as.matrix(merge_m1_all[,c(-1,-2,-3,-12)]), #removing label
+                   merge_m1_all[,3], # just label for x, y glmnet args
+                   family = "binomial", 
+                   alpha = 1)
 
+log.l1.fit1 = glmnet(as.matrix(merge_m1_all[,c(-1,-2,-3,-12)]), #removing label
+                   merge_m1_all[,3], # just label for x, y glmnet args
+                   family = "binomial", 
+                   alpha = 1,
+                   lambda = cv1.l1$lambda.min)
 
-#ALTERNATE
-fit2penalty = glm(label ~ .,
-           data = merge_m2, 
-           alpha = 1, #lasso 
-           family='binomial')
-glm1.probs <- predict(fit2penalty, alt_test, type = "response")
+#BLOCK
+cv2.l1 = cv.glmnet(as.matrix(merge_m2_all[,c(-1,-2,-3,-12)]), #removing label
+                   merge_m2_all[,3], # just label for x, y glmnet args
+                   family = "binomial", 
+                   alpha = 1)
+
+log.l1.fit2 = glmnet(as.matrix(merge_m2_all[,c(-1,-2,-3,-12)]), #removing label
+                   merge_m2_all[,3], # just label for x, y glmnet args
+                   family = "binomial", 
+                   alpha = 1, 
+                   lambda = cv2.l1$lambda.min)
+
+# CV  
+# fit with first split method 
+cv1.log.l1 = CVmaster(classifier = log.l1.fit1,
+                   train_feat = as.matrix(merge_m1_all[,c(-1,-2,-3,-12)]),
+                   train_labels = merge_m1_lab,
+                   folds= 10,
+                   loss = classification_error)
+
+cv2.log.l1 = CVmaster(classifier = log.l1.fit2,
+                   train_feat = as.matrix(merge_m2_all[,c(-1,-2,-3,-12)]),
+                   train_labels = merge_m1_lab,
+                   folds= 10,
+                   loss = classification_error)
+
+custom_merge(cv1.log.l1, cv2.log.l1)
 ```
 
 QDA / LDA
