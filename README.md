@@ -9,9 +9,9 @@ To clone the repository:
 
 `git clone https://github.com/WillTirone/521_proj2.git`
 
-Additionally, the image files are large and cannot be uploaded to GitHub. Create 
-a folder in your working director after clone this repository titled `image_data`
-and add the images from the paper there.
+In the scenario that a researcher comes along and needs to use new images, replace 
+the images found in `image_data` with the new, corrected images, using the same name
+as the image it is replacing. 
 
 To run the main project file, `proj2.qmd`, simply open the file in your R 
 editor of choice and run all the cells. The project was completed with R version

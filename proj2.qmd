@@ -272,12 +272,6 @@ The first, and most naive approach, would be to simply treat the three images as
 
 Second, since the data is correlated, we can hand-pick slices from each of the three images that result in the desired split, but in a way that retains the ordering. If we split each image into three chunks, we can then choose the first, middle, and last chunk for each of the desired sets and combine them. If, for some reason, there is some kind of feature or interesting detail present in the "position" of a slice of the data, hopefully this will allow us to capture it without overstating accuracy in training. To do this, we calculated the indices by hand.
 
-### 3)
-
-third: create a grid, not across images but training/validation/test in each of the splits and do that three times for each image? (lecture 13 / oct18). ex/ with 9 blocks, use 7 for training, one for validation , one for prediction, usual CV error. since we want to preserve spacial dependency.
-
-blocked Cross validation, repeat process for the three images? what do we do w the 0 points? just remove?
-
 Naive Approach
 
 ```{r}
@@ -302,29 +296,25 @@ alt_validate = data.frame(rbind(img1[92090:115110,],
 
 ## b) baseline
 
-The trivial classifier would have high accuracy if the image was mostly cloud-free. Since we're a little below 50%, the trivial classifier does not work well. Though, if we switched to classifying everything as a cloud we would have greater than 50% accuracy. However, we have a fairly high degree of uncertainty in our test and validation data. In the test data, about 27% of the points are labeled 0 for uncertain, and in the validation data, 70% are uncertain. So while the trivial classifier does poorly, we have to consider the uncertainty associated with it.
-
 ```{r}
-trivial = rep(-1,length(alt_test$label))
-alt_triv_accuracy = sum(trivial == alt_test$label) / length(alt_test$label)
-alt_validate_accuracy = sum(trivial == alt_validate$label) / length(alt_test$label)
+trivial_naive.test = rep(-1,length(naive_test$label))
+trivial_naive.validate = rep(-1,length(naive_validate$label)) 
+trivial_alt.test = rep(-1,length(alt_test$label))
+trivial_alt.validate = rep(-1,length(alt_validate$label))
 
-alt_triv_accuracy
-alt_validate_accuracy
+naive_test_triv = mean(trivial_naive.test == naive_test$label)
+naive_validate_triv = mean(trivial_naive.validate == naive_validate$label)
 
-# counts 
-alt_test |> count(label)
-alt_validate |> count(label)
+alt_test_triv = mean(trivial_alt.test == alt_test$label) 
+alt_validate_triv = mean(trivial_alt.validate == alt_validate$label) 
+
+1- naive_test_triv
+1- naive_validate_triv
+1- alt_test_triv
+1- alt_validate_triv
 ```
 
 ## c) best features
-
--   want our data to be separated
--   like lec16 on oct27 for classification error metrics?
--   pairwise scatterplots for correlation?
--   variable wise ... tree? like getting cut/off values of an X var to pred Y? i dont think that's too fancy
-
--in model pred, keep pt order
 
 ## d) CV function - separate R file
 
