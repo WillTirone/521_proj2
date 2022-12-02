@@ -19,17 +19,30 @@ editor of choice and run all the cells. The project was completed with R version
 follows if you don't have them installed: 
 
 library(factoextra)
+
 library(tidyverse)
+
 library(GGally)
+
 library(caret)
+
 library(lctools)
+
 library(sqldf)
+
 library(latex2exp)
+
 library(tidymodels)
+
 library(patchwork)
+
 library(tree)
+
 library(glmnet)
+
 library(MASS)
+
 library(xgboost)
+
 library(pROC)
 
