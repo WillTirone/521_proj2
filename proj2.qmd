@@ -673,14 +673,6 @@ qda_error_2 = 1 - mean(test_qda_label2 == alt_test$label)
 cat("method 1: ", qda_error_1, "\n", "method 2: ", qda_error_2)
 ```
 
-```{r}
-# NATALIE MOVE THIS SOMEWHERE ELSE 
-test_prob = predict(qda.fit, naive_test, type = "response")
-test_roc = roc(naive_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
-
-test_prob = predict(qda.fit, alt_test, type = "response")
-test_roc = roc(alt_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
-```
 
 XGBOOST
 
@@ -752,14 +744,25 @@ cat("method 1: ", naive_err_xg1, "\n", "method 2: ", err_xg2)
 
 ## b) ROC curves
 
+QDA
 ```{r}
-#see if code in part a runs if so it's there
+test_prob1 = predict(qda.fit1, naive_test[,c(4,5,6)], 
+                          type = "response")$posterior[,2]
+test_roc1 = roc(naive_test$label ~ test_prob1, plot = TRUE, print.auc = TRUE)
 
-# ROC-curve using pROC library
-library(pROC)
-roc_score = roc(ACTUALTESTPREDS, PREDICT)  # AUC score
-plot(roc_score, main="ROC curve -- Logistic Regression ")
+
+test_prob2 =  predict(qda.fit2, alt_test[,c(4,5,6)], 
+                          type = "response")$posterior[,2]
+test_roc2 = roc(alt_test$label ~ test_prob2, plot = TRUE, print.auc = TRUE)
 ```
+XGBOOST
+```{r}
+XGBOOSTtest_roc1 = roc(naive_test$label ~ xg_test_1, plot = TRUE, print.auc = TRUE)
+
+XGBOOSTtest_roc2 = roc(alt_test$label ~ xg_test_2, plot = TRUE, print.auc = TRUE)
+```
+
+
 
 ## c) (bonus) other metrics
 
