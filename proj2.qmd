@@ -490,26 +490,26 @@ Logistic Regression
 # Standard Logistic Regression 
 
 #NAIVE
-fit1 = glm(label ~ .,
+fit1.log = glm(label ~ .,
            data = merge_m1, 
            family='binomial')
 
 #ALTERNATE
-fit2 = glm(label ~ .,
+fit2.log = glm(label ~ .,
            data = merge_m2, 
            family='binomial')
 
 # CV  
 # fit with first split method 
 # must input data frame for glm 
-cv.log1 = CVmaster(classifier = fit1,
+cv.log1 = CVmaster(classifier = fit1.log,
                    train_feat = data.frame(merge_m1_feat), 
                    train_labels = merge_m1_lab,
                    folds= 10,
                    loss = classification_error)
 
 # fit with second split method 
-cv.log2 = CVmaster(classifier = fit2,
+cv.log2 = CVmaster(classifier = fit2.log,
                    train_feat = data.frame(merge_m2_feat), 
                    train_labels = merge_m2_lab,
                    folds= 10,
@@ -521,12 +521,30 @@ custom_merge(cv.log1,cv.log2)
 ### TEST LOG REGRESSION
 
 ```{r}
+# method 1 
+log_pred1 = predict(fit1.log, 
+            naive_test[,c(4,5,6)],
+            type='response')
 
+pred_labels1 = rep(-1, length(log_pred1))
+pred_labels1[log_pred1 > 0.5] = 1
+
+naive_error1 = 1 - mean(pred_labels1 == naive_test$label)
+
+# method 2 
+log_pred2 = predict(fit2.log, 
+            alt_test[,c(4,5,6)],
+            type='response')
+
+pred_labels2 = rep(-1, length(log_pred2))
+pred_labels2[log_pred2 > 0.5] = 1
+
+error2 = 1 - mean(pred_labels2 == alt_test$label)
+
+cat("method 1: ", naive_error1, "\n", "method 2: ", error2)
 ```
 
 Logistic Regression w L1 penalty
-
-Variable selection
 
 ```{r cache=TRUE}
 
@@ -534,19 +552,15 @@ Variable selection
 
 
 set.seed(123) 
-cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
-# Fit the final model on the training data
-model <- glmnet(x, y, alpha = 1, family = "binomial",
-                lambda = cv.lasso$lambda.min)
 
 #NAIVE
 # cross validate to chooose best lambda 
-cv1.l1 = cv.glmnet(as.matrix(merge_m1_all[,c(-1,-2,-3,-12)]), #removing label
+cv1.l1 = cv.glmnet(as.matrix(merge_m1_all[,4:11]), #removing label
                    merge_m1_all[,3], # just label for x, y glmnet args
                    family = "binomial", 
                    alpha = 1)
 
-log.l1.fit1 = glmnet(as.matrix(merge_m1_all[,c(-1,-2,-3,-12)]), #removing label
+log.l1.fit1 = glmnet(as.matrix(merge_m1_all[,4:11]), #removing label
                    merge_m1_all[,3], # just label for x, y glmnet args
                    family = "binomial", 
                    alpha = 1,
@@ -554,12 +568,12 @@ log.l1.fit1 = glmnet(as.matrix(merge_m1_all[,c(-1,-2,-3,-12)]), #removing label
 
 #BLOCK
 # cross validate to chooose best lambda 
-cv2.l1 = cv.glmnet(as.matrix(merge_m2_all[,c(-1,-2,-3,-12)]), #removing label
+cv2.l1 = cv.glmnet(as.matrix(merge_m2_all[,4:11]), #removing label
                    merge_m2_all[,3], # just label for x, y glmnet args
                    family = "binomial", 
                    alpha = 1)
 
-log.l1.fit2 = glmnet(as.matrix(merge_m2_all[,c(-1,-2,-3,-12)]), #removing label
+log.l1.fit2 = glmnet(as.matrix(merge_m2_all[,4:11]), #removing label
                    merge_m2_all[,3], # just label for x, y glmnet args
                    family = "binomial", 
                    alpha = 1, 
@@ -568,13 +582,13 @@ log.l1.fit2 = glmnet(as.matrix(merge_m2_all[,c(-1,-2,-3,-12)]), #removing label
 # CV  
 # fit with first split method 
 cv1.log.l1 = CVmaster(classifier = log.l1.fit1,
-                   train_feat = as.matrix(merge_m1_all[,c(-1,-2,-3,-12)]),
+                   train_feat = as.matrix(merge_m1_all[,4:11]),
                    train_labels = merge_m1_lab,
                    folds= 10,
                    loss = classification_error)
 
 cv2.log.l1 = CVmaster(classifier = log.l1.fit2,
-                   train_feat = as.matrix(merge_m2_all[,c(-1,-2,-3,-12)]),
+                   train_feat = as.matrix(merge_m2_all[,4:11]),
                    train_labels = merge_m1_lab,
                    folds= 10,
                    loss = classification_error)
@@ -582,10 +596,35 @@ cv2.log.l1 = CVmaster(classifier = log.l1.fit2,
 custom_merge(cv1.log.l1, cv2.log.l1)
 ```
 
+```{r}
+log.l1.fit1$beta
+log.l1.fit2$beta
+```
+
 #### TEST LOGISTIC WITH L1 PENALTY
 
 ```{r}
+# method 1 
+log_l1_pred1 = predict(log.l1.fit1, 
+                  as.matrix(naive_test[,4:11]),
+                  type='response')
 
+pred_labels1_l1 = rep(-1, length(log_l1_pred1))
+pred_labels1_l1[log_l1_pred1 > 0.5] = 1
+
+naive_error1_l1 = 1 - mean(pred_labels1_l1 == naive_test$label)
+
+# method 2 
+log_l1_pred2 = predict(log.l1.fit2, 
+                  as.matrix(alt_test[,4:11]),
+                  type='response')
+
+pred_labels1_l2 = rep(-1, length(log_l1_pred2))
+pred_labels1_l2[log_l1_pred2 > 0.5] = 1
+
+alt_error1_l2 = 1 - mean(pred_labels1_l2 == alt_test$label)
+
+cat("method 1: ", naive_error1_l1, "\n", "method 2: ", alt_error1_l2)
 ```
 
 QDA / LDA
@@ -621,35 +660,93 @@ custom_merge(cv.qda1, cv.qda2)
 ### TEST QDA
 
 ```{r}
+# method 1 
+test_qda_label1 = predict(qda.fit1, naive_test[,c(4,5,6)], 
+                          type = "response")$class
+qda_error_1 = 1 - mean(test_qda_label1 == naive_test$label)
 
+# method 2 
+test_qda_label2 = predict(qda.fit2, alt_test[,c(4,5,6)], 
+                          type = "response")$class
+qda_error_2 = 1 - mean(test_qda_label2 == alt_test$label)
+
+cat("method 1: ", qda_error_1, "\n", "method 2: ", qda_error_2)
+```
+
+```{r}
+# NATALIE MOVE THIS SOMEWHERE ELSE 
 test_prob = predict(qda.fit, naive_test, type = "response")
 test_roc = roc(naive_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
-
 
 test_prob = predict(qda.fit, alt_test, type = "response")
 test_roc = roc(alt_test$label ~ test_prob, plot = TRUE, print.auc = TRUE)
 ```
 
-BOOSTING
+XGBOOST
 
 ```{r}
-#NAIVE
-cloudtree = tree(label ~ ., merge_m1)
-plot(cloudtree)
-text(cloudtree, pretty = 0)
-#cloudtree.pred <- predict(cloudtree, naive_test, type = "class")
 
-#ALTERNATE
-cloudtree = tree(label ~ ., merge_m2)
-plot(cloudtree)
-text(cloudtree, pretty = 0)
-#cloudtree.pred <- predict(cloudtree, alt_test, type = "class")
+# specific for xgb labels, can only be 0 / 1
+merge_m1_xg = merge_m1_lab |>
+  mutate(label = ifelse(label==-1,0,1))
+
+merge_m2_xg = merge_m2_lab |>
+  mutate(label = ifelse(label==-1,0,1))
+
+# training 
+# NAIVE 
+dtrain1 <- xgb.DMatrix(data = as.matrix(merge_m1_feat),
+                      label = as.matrix(merge_m1_xg))
+xgboost1 <- xgboost(data = dtrain1, 
+                      max.depth = 2, eta = 1, 
+                      nthread = 2, nrounds = 2, 
+                      objective = "binary:logistic")
+# CV 
+cv.xgboost1 = CVmaster(classifier = xgboost1,
+                   train_feat = as.matrix(merge_m1_feat), 
+                   train_labels = merge_m1_lab,
+                   folds= 10,
+                   loss = classification_error,
+                   fit_type='response')
+
+# BLOCK METHOD 
+dtrain2 <- xgb.DMatrix(data = as.matrix(merge_m2_feat),
+                      label = as.matrix(merge_m2_xg))
+xgboost2 <- xgboost(data = dtrain2, 
+                      max.depth = 2, eta = 1, 
+                      nthread = 2, nrounds = 2, 
+                      objective = "binary:logistic")
+# CV 
+cv.xgboost2 = CVmaster(classifier = xgboost2,
+                   train_feat = as.matrix(merge_m2_feat), 
+                   train_labels = merge_m2_lab,
+                   folds= 10,
+                   loss = classification_error,
+                   fit_type='response')
+
+custom_merge(cv.xgboost1,cv.xgboost2)
 ```
 
-xgboost
+### TEST XGBOOST
 
 ```{r}
+# method 1 
+xg_test_1 = predict(xgboost1, as.matrix(naive_test[,c(4,5,6)]))
 
+xg_lab1 = rep(-1, length(xg_test_1))
+xg_lab1[xg_test_1 > 0.5] = 1
+
+naive_err_xg1 = 1 - mean(xg_lab1 == naive_test$label)
+
+# method 2
+xg_test_2 = predict(xgboost2, as.matrix(alt_test[,c(4,5,6)]))
+
+xg_lab2 = rep(-1, length(xg_test_2))
+xg_lab2[xg_test_2 > 0.5] = 1
+
+err_xg2 = 1 - mean(xg_lab2 == alt_test$label)
+
+cat("method 1: ", naive_err_xg1, "\n", "method 2: ", err_xg2)
 ```
 
 ## b) ROC curves
@@ -667,3 +764,5 @@ Resources
 #pg 170 ISL
 
 \# source : http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
+
+https://xgboost.readthedocs.io/en/stable/R-package/xgboostPresentation.html
