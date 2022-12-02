@@ -763,10 +763,102 @@ XGBOOSTtest_roc2 = roc(alt_test$label ~ xg_test_2, plot = TRUE, print.auc = TRUE
 ```
 
 
-
 ## c) (bonus) other metrics
 
 # 4) Diagnostics
+question: is there 0 labels in our test data? should we filter those out? how does cbind work if so? man...
+```{r}
+#QDA
+p1qda = cbind(naive_test, test_qda_label1)
+p2qda = cbind(alt_test, test_qda_label2)
+
+#XGBOOST
+p1xgboost = cbind(naive_test, xg_lab1)
+p2xgboost = cbind(alt_test, xg_lab2)
+```
+
+QDA: NAIVE WAY PLOT COMPARISON
+```{r}
+p1 = ggplot(p1qda %>% filter(label != 0), aes(x=x,y=y)) + 
+  geom_point(aes(colour = factor(label))) + 
+  facet_grid(cols = vars(source)) + 
+  #labs(title = "Images With Expert Labels",
+  #     subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  scale_colour_brewer("Expert \nLabel") + 
+  theme_bw()
+
+p2 = ggplot(p1qda %>% filter(label != 0), aes(x=x,y=y)) + 
+  geom_point(aes(colour = test_qda_label1)) + 
+  facet_grid(cols = vars(source)) + 
+  #labs(title = "Images With Predicted Labels",
+  #     subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  scale_colour_brewer("Predicted \nLabel") + 
+  theme_bw()
+
+p1 + p2
+```
+QDA: ALTERNATIVE WAY
+```{r}
+p3 = ggplot(p2qda %>% filter(label != 0), aes(x=x,y=y)) + 
+  geom_point(aes(colour = factor(label))) + 
+  facet_grid(cols = vars(source)) + 
+  #labs(title = "Images With Expert Labels",
+  #     subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  scale_colour_brewer("Expert \nLabel") + 
+  theme_bw()
+
+p4 = ggplot(p2qda %>% filter(label != 0), aes(x=x,y=y)) + 
+  geom_point(aes(colour = test_qda_label2)) + 
+  facet_grid(cols = vars(source)) + 
+  #labs(title = "Images With Predicted Labels",
+  #     subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  scale_colour_brewer("Predicted \nLabel") + 
+  theme_bw()
+
+p3 / p4
+```
+
+XGBOOST: NAIVE
+```{r}
+p5 = ggplot(p1xgboost %>% filter(label != 0), aes(x=x,y=y)) + 
+  geom_point(aes(colour = factor(label))) + 
+  facet_grid(cols = vars(source)) + 
+  #labs(title = "Images With Expert Labels",
+  #     subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  scale_colour_brewer("Expert \nLabel") + 
+  theme_bw()
+
+p6 = ggplot(p1xgboost %>% filter(label != 0), aes(x=x,y=y)) + 
+  geom_point(aes(colour = factor(xg_lab1))) + 
+  facet_grid(cols = vars(source)) + 
+  #labs(title = "Images With Predicted Labels",
+  #     subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  scale_colour_brewer("Predicted \nLabel") + 
+  theme_bw()
+
+p5 + p6
+```
+XGBOOST ALTERNATIVE
+```{r}
+p7 = ggplot(p2xgboost %>% filter(label != 0), aes(x=x,y=y)) + 
+  geom_point(aes(colour = factor(label))) + 
+  facet_grid(cols = vars(source)) + 
+  #labs(title = "Images With Expert Labels",
+  #     subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  scale_colour_brewer("Expert \nLabel") + 
+  theme_bw()
+
+p8 = ggplot(p2xgboost %>% filter(label != 0), aes(x=x,y=y)) + 
+  geom_point(aes(colour = factor(xg_lab2))) + 
+  facet_grid(cols = vars(source)) + 
+  #labs(title = "Images With Predicted Labels",
+  #     subtitle = "-1: No Cloud | 0 : Uncertain | 1 : Cloud") + 
+  scale_colour_brewer("Predicted \nLabel") + 
+  theme_bw()
+
+p7 / p8
+```
+
 
 Resources
 
