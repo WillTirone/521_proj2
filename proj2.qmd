@@ -730,9 +730,7 @@ custom_merge(cv.xgboost1,cv.xgboost2)
 ### TEST XGBOOST
 
 ```{r}
-<<<<<<< HEAD
-naive_test[,4:ncol(naive_test)]
-=======
+
 # method 1 
 xg_test_1 = predict(xgboost1, as.matrix(naive_test[,c(4,5,6)]))
 
@@ -750,7 +748,6 @@ xg_lab2[xg_test_2 > 0.5] = 1
 err_xg2 = 1 - mean(xg_lab2 == alt_test$label)
 
 cat("method 1: ", naive_err_xg1, "\n", "method 2: ", err_xg2)
->>>>>>> 9a4eb75196d1af5083625052570ccb8764682f12
 ```
 
 ## b) ROC curves
@@ -774,8 +771,8 @@ Resources
 
 \# source : http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
 
-<<<<<<< HEAD
+
 \# source: https://www.geeksforgeeks.org/plotting-roc-curve-in-r-programming/
-=======
+
 https://xgboost.readthedocs.io/en/stable/R-package/xgboostPresentation.html
->>>>>>> 9a4eb75196d1af5083625052570ccb8764682f12
+
