@@ -649,13 +649,18 @@ text(cloudtree, pretty = 0)
 xgboost
 
 ```{r}
-
+naive_test[,4:ncol(naive_test)]
 ```
 
 ## b) ROC curves
 
 ```{r}
 #see if code in part a runs if so it's there
+
+# ROC-curve using pROC library
+library(pROC)
+roc_score = roc(ACTUALTESTPREDS, PREDICT)  # AUC score
+plot(roc_score, main="ROC curve -- Logistic Regression ")
 ```
 
 ## c) (bonus) other metrics
@@ -667,3 +672,5 @@ Resources
 #pg 170 ISL
 
 \# source : http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
+
+\# source: https://www.geeksforgeeks.org/plotting-roc-curve-in-r-programming/
