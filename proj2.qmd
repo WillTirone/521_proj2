@@ -356,18 +356,6 @@ custom_merge = function(df1,df2) {
 
 # 3) modeling
 
-note:
-
-be careful with Hyperparameter choices
-
-• dimension in PCA
-
-• K in K-means, or GMM
-
-• regularization parameter in regularlized methods
-
-• number of trees in random forests
-
 ## a) fitting
 
 Here, merging training and validation data:
@@ -472,7 +460,7 @@ pred_labels2[log_pred2 > 0.5] = 1
 
 error2 = 1 - mean(pred_labels2 == alt_test$label)
 
-cat("method 1: ", naive_error1, "\n", "method 2: ", error2)
+cat("method 1: ", naive_error1,"\n", "method 2: ", error2)
 ```
 
 Logistic Regression w L1 penalty
@@ -798,13 +786,3 @@ p8 = ggplot(p2xgboost %>% filter(label != 0), aes(x=x,y=y)) +
 
 p7 / p8
 ```
-
-Resources
-
-#pg 170 ISL
-
-\# source : http://www.sthda.com/english/articles/36-classification-methods-essentials/149-penalized-logistic-regression-essentials-in-r-ridge-lasso-and-elastic-net/
-
-\# source: https://www.geeksforgeeks.org/plotting-roc-curve-in-r-programming/
-
-https://xgboost.readthedocs.io/en/stable/R-package/xgboostPresentation.html
