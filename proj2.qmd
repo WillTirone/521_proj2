@@ -656,75 +656,110 @@ test_prob2 =  predict(qda.fit2, alt_test[,c(4,5,6)],
 
 ##### Overall
 
-Compaing the four ROC curves we selected, we noticed both of our naive appraoches for QDA and XGBoost faired better than the alternative approaches in terms of accuracy. A higher area under the curve provides evidence for a stronger model. Our Naive QDA gave an ROC value of 0.866, our alternative QDA has a slightly worse value of 0.837. Our Naive XGboost gave an ROC value of 0.863, our alternative XGboost has a slightly worse value of 0.833. So, our Naive QDA appears to model the data best when considering accuracy.
+Compaing the four ROC curves we selected, we noticed both of our alternative appraoches for QDA and XGBoost faired better than the naive approaches in terms of accuracy. A higher area under the curve provides evidence for a stronger model, but all of the QDA and XGBoost have very high AUC values = close to the idea 1.0. Our Naive QDA gave an ROC value of 0.959, our alternative QDA has a slightly better value of 0.963. Our Naive XGboost gave an ROC value of 0.953, our alternative XGboost has a slightly better value of 0.967. So, our alternative XGBoost appears to model the data best when considering accuracy - however, this AUC is so close to the XGboost that both do an equally good job.
 
 note: should we be doing this on the training data?
 
 ##### NAIVE QDA
 
-In an ROC curve, sensitivity (true positive rate) is displayed on the y-axis and selectivity (false positive rate) is on the x-axis. Considering our first ROC curve for Naive QDA, we are looking for a cutoff point that is close to (1, 1) as it helps us achieve more accuracy in our classifications (the upper left corner), which a sensitivity value of approximately 90% gives us (nb: corresponding selectivity of around 0.6). The curve tells us to classify cloud as cloud (versus non-cloud), we should set our classifying threshold to be 0.90 (in comparison to the traditional 0.50). In this example, a sensitivity of 0.9 here is the probability that the model predicts a cloud for an observation when the outcome is indeed a cloud. While doing so, the selectivity (false positive rate) is round 60%. This tells us that probability of classifying a cloud as that the model predicts that a non-cloud pixel is indeed not a cloud.
+In an ROC curve, sensitivity (true positive rate) is displayed on the y-axis and selectivity (1 - false positive rate) is on the x-axis. Considering our first ROC curve for Naive QDA, we are looking for a cutoff point that is close to (1, 1) as it helps us achieve more accuracy in our classifications (the upper left corner). In this model, the sensitivity of 0.98 here is the probability that the model correlctly predicts a cloud. The selectivity is around 0.91. Using the geometric mean as a measure of optimality, we have our optimal threshold of 0.39. That means, anything above 0.39 we should classify as a cloud, and below as non-cloud. The red line indicated the ideal sensitivity for this threshold, and where the red line crosses the black line also reflects the ideal selectivity.
+
 
 ##### ALTERNATIVE QDA
 
-In this ROC curve, our ideal threshold appears to be one that gives a sensitivity of 0.95 and a selectivity of 0.45, indicating we will correctly classify 95% of clouds to be clouds and 45% of clouds as non-clouds.
+In this ROC curve, our ideal threshold appears to be one that gives a sensitivity of 0.98 and a selectivity of 0.86, indicating we will correctly classify 98% of clouds to be clouds and 45% of clouds as non-clouds. Here, our optimal threshold is 0.52, indicating that anything with a probability 0.52 or above should be classified as a cloud, and anything below as non-cloud.
+
 
 ##### NAIVE XGBOOST
 
-In this ROC curve, our ideal threshold appears to be one that gives a sensitivity of 0.90 and a selectivity of 0.55, indicating we will correctly classify 90% of clouds to be clouds and 55% of clouds as non-clouds.
+In this ROC curve, our ideal threshold appears to be one that gives a sensitivity of 0.97 and a selectivity of 0.91, indicating we will correctly classify 97% of clouds to be clouds and 55% of clouds as non-clouds. Here, our optimal threshold is 0.39, indicating that anything with a probability 0.39 or above should be classified as a cloud, and anything below as non-cloud.
 
 ##### ALTERNATIVE XGBOOST
 
-In this ROC curve, our ideal threshold appears to be one that gives a sensitivity of 0.95 and a selectivity of 0.45, indicating we will correctly classify 95% of clouds to be clouds and 45% of clouds as non-clouds.
+In this ROC curve, our ideal threshold appears to be one that gives a sensitivity of 0.98 and a selectivity of 0.86, indicating we will correctly classify 98% of clouds to be clouds. Here, our optimal threshold is 0.52, indicating that anything with a probability 0.52 or above should be classified as a cloud, and anything below as non-cloud.
 
-|                                                                                                                                                                                                                                                                                                                                      |
-|------------------------------------------------------------------|
-| notes (either cite or use for understanding what I'm doing)                                                                                                                                                                                                                                                                          |
-| "But it is always NOT necessary to consider prediction probability as 0.5. Threshold value could be set at any value which helps us in classifying the results better. Especially for the problems related with highly imbalanced data or anomaly detection --- playing with the threshold value will help you improve the accuracy. |
-| In general, ideal value of ROC curve is (0,1) and from the plot, we need to identify the 'TPR'/'FPR' values closer to the point (0,1) and can determine the respective 'Threshold' value as a 'Probability Threshold'. "                                                                                                             |
-| (source: https://medium.com/analytics-vidhya/roc-curve-auc-value-significance-of-thresholds-and-what-do-they-really-mean-on-the-model-723039baf35c )                                                                                                                                                                                 |
-
-For any given cutoff t, we classify observations into the cloud or no cloud categories depending on whether f(X) \< t or f(X) ≥ t. For our cutoff of 0.85 (85% true positive rate), we classify observations as clouds or not clouds on whether f(X)
-
-For any given cutoff t, we classify observations as clouds or non=clouds depending on whether f(X) \< t or f(X) ≥ t. The ROC curve is obtained by forming these predictions and computing the false positive and true positive rates for a range of values of t. (textbook p384)
-
+                                                                                            
 ```{r}
-#QDA
-roc(naive_test$label ~ test_prob1, plot = TRUE, print.auc = TRUE,
-    main = "QDA (Naive) on Test Data")
-abline(h = 0.90, col = "red")
-
-
-roc(alt_test$label ~ test_prob2, plot = TRUE, print.auc = TRUE,
-        main = "QDA (Alt) on Test Data")
-abline(h = 0.95, col = "red")
+#source:
+#https://towardsdatascience.com/optimal-threshold-for-imbalanced-classification-5884e870c293
+#textbook p384
 ```
 
 ```{r}
-#source: https://towardsdatascience.com/optimal-threshold-for-imbalanced-classification-5884e870c293
-
-#TODO: DELETE 0s IN NAIVE TEST
+#QDA
 rocobj1 = roc(naive_test$label, xg_test_1)
-tpr = rocobj1$sensitivities
-specificities = rocobj1$specificities
+tpr = rocobj1$sensitivities; specificities = rocobj1$specificities
 thresholds = rocobj1$thresholds
 
 gmean = sqrt(tpr * (specificities))
 index = which.max(gmean)
-tpr[index]
+
 thresholds[index]
+tpr[index]
+specificities[index]
+
+#naive plot
+roc(naive_test$label ~ test_prob1, plot = TRUE, print.auc = TRUE,
+    main = "QDA (Naive) on Test Data, threshold = 0.39")
+abline(h = tpr[index], col = "red")
+```
+
+```{r}
+rocobj2 = roc(alt_test$label, xg_test_2)
+tpr = rocobj2$sensitivities; specificities = rocobj2$specificities
+thresholds = rocobj2$thresholds
+
+gmean = sqrt(tpr * (specificities))
+index = which.max(gmean)
+
+thresholds[index]
+tpr[index]
+specificities[index]
+
+#alt plot
+roc(alt_test$label ~ test_prob2, plot = TRUE, print.auc = TRUE,
+        main = "QDA (Alt) on Test Data, threshold = 0.52")
+abline(h = tpr[index], col = "red")
 ```
 
 ```{r}
 #XGBOOST
-roc(naive_test$label ~ xg_test_1, plot = TRUE, print.auc = TRUE, 
-    main = "XGBOOST (Naive) on Test Data")
-abline(h = 0.88, col = "red")
+rocobj3 = roc(naive_test$label, xg_test_1)
+tpr = rocobj3$sensitivities; specificities = rocobj3$specificities
+thresholds = rocobj3$thresholds
 
+gmean = sqrt(tpr * (specificities))
+index = which.max(gmean)
 
-roc(alt_test$label ~ xg_test_2, plot = TRUE, print.auc = TRUE,
-    main = "XGBOOST (ALT) on Test Data")
-abline(h = 0.85, col = "red")
+thresholds[index]
+tpr[index]
+specificities[index]
+
+#naive plot
+roc(naive_test$label ~ xg_test_1, plot = TRUE, print.auc = TRUE,
+        main = "XGBOOST (Naive) on Test Data, threshold = 0.39")
+abline(h = tpr[index], col = "red")
 ```
+
+```{r}
+###
+rocobj4 = roc(alt_test$label, xg_test_2)
+tpr = rocobj4$sensitivities; specificities = rocobj4$specificities
+thresholds = rocobj4$thresholds
+
+gmean = sqrt(tpr * (specificities))
+index = which.max(gmean)
+
+thresholds[index]
+tpr[index]
+specificities[index]
+
+#alt plot
+roc(alt_test$label ~ xg_test_2, plot = TRUE, print.auc = TRUE,
+        main = "XGBOOST (Alt) on Test Data, threshold = 0.52")
+abline(h = tpr[index], col = "red")
+```
+
 
 ## c) (bonus) other metrics
 
