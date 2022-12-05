@@ -777,6 +777,43 @@ p1xgboost = cbind(naive_test, xg_lab1)
 p2xgboost = cbind(alt_test, xg_lab2)
 ```
 
+```{r}
+#naive qda
+qda1naive = p1qda %>% filter(label == 1) %>%
+  summarize("Naive QDA" = 1 - mean(label == test_qda_label1)) #0.128
+qda2naive = p1qda %>% filter(label == -1) %>%
+  summarize("Naive QDA" = 1 - mean(label == test_qda_label1)) #0.062
+
+#alt qda
+qda1alt = p2qda %>% filter(label == 1) %>%
+  summarize("Block QDA" = mean(label == test_qda_label2)) #0.036
+qda2alt = p2qda %>% filter(label == -1) %>%
+  summarize("Block QDA" = mean(label == test_qda_label2)) #0.104
+
+#naive xgboost
+xgboost1naive = p1xgboost %>% filter(label == 1) %>%
+  summarize("Naive XGBoost" = mean(label == xg_lab1)) #0.028
+xgboost2naive = p1xgboost %>% filter(label == -1) %>%
+  summarize("Naive XGBoost" = mean(label == xg_lab1)) #0.088
+
+#alt xgboost
+xgboost1alt = p2xgboost %>% filter(label == 1) %>%
+  summarize("Block XGBoost" = mean(label == xg_lab2)) #0.022
+xgboost2alt = p2xgboost %>% filter(label == -1) %>%
+  summarize("Block XGBoost" = mean(label == xg_lab2)) #0.140
+
+cloud = c(qda1naive, qda1alt, xgboost1naive, xgboost1alt)
+nocloud = c(qda2naive, qda2alt, xgboost2naive, xgboost2alt)
+
+rbind("Truely Cloud" = cloud, "Truly No Cloud" = nocloud)
+```
+Proportion of times we missclassify a cloud as not a cloud:
+
+
+Proportion of times we accidentally classify something that is not a cloud as a cloud:
+
+When it is not a cloud, we label it as a cloud:
+
 QDA: NAIVE WAY PLOT COMPARISON
 
 ```{r}
