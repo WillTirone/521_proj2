@@ -780,9 +780,9 @@ p2xgboost = cbind(alt_test, xg_lab2)
 ```{r}
 #naive qda
 qda1naive = p1qda %>% filter(label == 1) %>%
-  summarize("Naive QDA" = 1 - mean(label == test_qda_label1)) #0.128
+  summarize("Naive QDA" = mean(label == test_qda_label1)) #0.128
 qda2naive = p1qda %>% filter(label == -1) %>%
-  summarize("Naive QDA" = 1 - mean(label == test_qda_label1)) #0.062
+  summarize("Naive QDA" = mean(label == test_qda_label1)) #0.062
 
 #alt qda
 qda1alt = p2qda %>% filter(label == 1) %>%
