@@ -14,6 +14,8 @@ library(glmnet)
 library(MASS)
 library(xgboost)
 library(pROC)
+library(DiagrammeR)
+library(klaR)
 })
 
 # importing CV master function 
@@ -664,11 +666,9 @@ note: should we be doing this on the training data?
 
 In an ROC curve, sensitivity (true positive rate) is displayed on the y-axis and selectivity (1 - false positive rate) is on the x-axis. Considering our first ROC curve for Naive QDA, we are looking for a cutoff point that is close to (1, 1) as it helps us achieve more accuracy in our classifications (the upper left corner). In this model, the sensitivity of 0.98 here is the probability that the model correlctly predicts a cloud. The selectivity is around 0.91. Using the geometric mean as a measure of optimality, we have our optimal threshold of 0.39. That means, anything above 0.39 we should classify as a cloud, and below as non-cloud. The red line indicated the ideal sensitivity for this threshold, and where the red line crosses the black line also reflects the ideal selectivity.
 
-
 ##### ALTERNATIVE QDA
 
 In this ROC curve, our ideal threshold appears to be one that gives a sensitivity of 0.98 and a selectivity of 0.86, indicating we will correctly classify 98% of clouds to be clouds and 45% of clouds as non-clouds. Here, our optimal threshold is 0.52, indicating that anything with a probability 0.52 or above should be classified as a cloud, and anything below as non-cloud.
-
 
 ##### NAIVE XGBOOST
 
@@ -678,7 +678,6 @@ In this ROC curve, our ideal threshold appears to be one that gives a sensitivit
 
 In this ROC curve, our ideal threshold appears to be one that gives a sensitivity of 0.98 and a selectivity of 0.86, indicating we will correctly classify 98% of clouds to be clouds. Here, our optimal threshold is 0.52, indicating that anything with a probability 0.52 or above should be classified as a cloud, and anything below as non-cloud.
 
-                                                                                            
 ```{r}
 #source:
 #https://towardsdatascience.com/optimal-threshold-for-imbalanced-classification-5884e870c293
@@ -760,12 +759,27 @@ roc(alt_test$label ~ xg_test_2, plot = TRUE, print.auc = TRUE,
 abline(h = tpr[index], col = "red")
 ```
 
-
-## c) (bonus) other metrics
-
 # 4) Diagnostics
 
-question: is there 0 labels in our test data? should we filter those out? how does cbind work if so? man...
+## a)
+
+QDA diagnostics
+
+```{r}
+
+
+confusionMatrix(as.factor(naive_test$label), test_qda_label1)
+confusionMatrix(as.factor(alt_test$label), test_qda_label2)
+```
+
+plotting trees
+
+```{r}
+xgb.plot.tree(model=xgboost1)
+xgb.plot.tree(model=xgboost2)
+```
+
+## b)
 
 ```{r}
 #QDA
@@ -807,8 +821,8 @@ nocloud = c(qda2naive, qda2alt, xgboost2naive, xgboost2alt)
 
 rbind("Truly Cloud" = cloud, "Truly No Cloud" = nocloud)
 ```
-Proportion of times we missclassify a cloud as not a cloud:
 
+Proportion of times we missclassify a cloud as not a cloud:
 
 Proportion of times we accidentally classify something that is not a cloud as a cloud:
 
@@ -901,3 +915,7 @@ p8 = ggplot(p2xgboost %>% filter(label != 0), aes(x=x,y=y)) +
 
 p7 / p8
 ```
+
+# Resources: 
+
+See bib.bib file in .zip upload of project submission
