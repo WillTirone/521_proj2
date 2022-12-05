@@ -805,7 +805,7 @@ xgboost2alt = p2xgboost %>% filter(label == -1) %>%
 cloud = c(qda1naive, qda1alt, xgboost1naive, xgboost1alt)
 nocloud = c(qda2naive, qda2alt, xgboost2naive, xgboost2alt)
 
-rbind("Truely Cloud" = cloud, "Truly No Cloud" = nocloud)
+rbind("Truly Cloud" = cloud, "Truly No Cloud" = nocloud)
 ```
 Proportion of times we missclassify a cloud as not a cloud:
 
